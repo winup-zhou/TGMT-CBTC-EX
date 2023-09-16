@@ -339,6 +339,8 @@ namespace TGMTAts {
                     if (state.Speed == 0 && handles.Power.Notch == 0) {
                         reverseStartLocation = location;
                     } else {
+                        panel_[10] = 2;
+                        panel_[29] = 2;
                         bCommand = Math.Max(bCommand, handles.Brake.EmergencyBrakeNotch);
                     }
                 }
@@ -438,7 +440,7 @@ namespace TGMTAts {
                 }
             }
 
-            if (StationManager.NextStation.Pass && Math.Abs(StationManager.NextStation.StopPosition - location) < Config.StationStartDistance + 200) panel_[32] = 3;
+            if (TGMTAts.signalMode > 1 && StationManager.NextStation.Pass && Math.Abs(StationManager.NextStation.StopPosition - location) < Config.StationStartDistance + 200) panel_[32] = 3;
 
             // 信号灯
             if (signalMode >= 2) {

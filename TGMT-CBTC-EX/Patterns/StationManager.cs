@@ -62,7 +62,7 @@ namespace TGMTAts {
         }
 
         public static SpeedLimit RecommendCurve() {
-            if (NextStation.Pass){
+            if (TGMTAts.signalMode > 1 && NextStation.Pass) {
                 return SpeedLimit.inf;
             }else{
                 if (NextStation.StopPosition >= (int)Config.LessInf){
