@@ -56,10 +56,6 @@ namespace TGMTAts {
         public override TickResult Tick(TimeSpan elapsed) {
             var state = Native.VehicleState;
 
-            SpeedLimit nextLimit;
-
-            SpeedLimit movementEndpoint = SpeedLimit.inf;
-
             int speedMultiplier = 4;
 
             AtsEx.PluginHost.Handles.HandleSet handles = Native.Handles;
