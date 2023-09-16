@@ -1,0 +1,108 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{A18C1921-1E03-4FE8-A6ED-6C1FC2209F5F}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>TGMTAts</RootNamespace>
+    <AssemblyName>TGMT-CBTC-EX</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="0Harmony, Version=2.2.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Lib.Harmony.2.2.2\lib\net48\0Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="AtsEx.CoreExtensions, Version=0.17.30127.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\AtsEx.CoreExtensions.0.19.0\lib\AtsEx.CoreExtensions.dll</HintPath>
+    </Reference>
+    <Reference Include="AtsEx.PluginHost, Version=0.19.30520.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\AtsEx.PluginHost.0.19.0\lib\AtsEx.PluginHost.dll</HintPath>
+    </Reference>
+    <Reference Include="BveTypes, Version=0.19.30520.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\AtsEx.PluginHost.0.19.0\lib\BveTypes.dll</HintPath>
+    </Reference>
+    <Reference Include="FastCaching, Version=0.17.30125.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\AtsEx.PluginHost.0.19.0\lib\FastCaching.dll</HintPath>
+    </Reference>
+    <Reference Include="FastMember, Version=0.17.21224.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\AtsEx.PluginHost.0.19.0\lib\FastMember.dll</HintPath>
+    </Reference>
+    <Reference Include="ObjectiveHarmonyPatch, Version=1.0.30529.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\ObjectiveHarmonyPatch.1.0.0\lib\ObjectiveHarmonyPatch.dll</HintPath>
+    </Reference>
+    <Reference Include="SlimDX, Version=4.0.13.43, Culture=neutral, PublicKeyToken=b1b0c32fd1ffe4f9, processorArchitecture=x86">
+      <HintPath>..\packages\SlimDX.4.0.13.44\lib\NET40\SlimDX.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="TypeWrapping, Version=0.17.30127.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\AtsEx.PluginHost.0.19.0\lib\TypeWrapping.dll</HintPath>
+    </Reference>
+    <Reference Include="UnembeddedResources, Version=1.0.30529.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\UnembeddedResources.1.0.0\lib\UnembeddedResources.dll</HintPath>
+    </Reference>
+    <Reference Include="Zbx1425.DXDynamicTexture-net48">
+      <HintPath>..\..\CASCO-Urbalis888-CBTC\packages\Zbx1425.DXDynamicTexture\Zbx1425.DXDynamicTexture-net48.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Ato.cs" />
+    <Compile Include="TickNew.cs" />
+    <Compile Include="Config.cs" />
+    <Compile Include="FolderHash.cs" />
+    <Compile Include="Inputs.cs" />
+    <Compile Include="Load.cs" />
+    <Compile Include="Patterns\CalculatedLimit.cs" />
+    <Compile Include="Patterns\PreTrainManager.cs" />
+    <Compile Include="Patterns\SpeedLimit.cs" />
+    <Compile Include="Patterns\StationManager.cs" />
+    <Compile Include="Patterns\TrackLimit.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UserInterface\DebugWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UserInterface\DebugWindow.Designer.cs">
+      <DependentUpon>DebugWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UserInterface\GDIWrapper.cs" />
+    <Compile Include="UserInterface\TGMTPainter.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="UserInterface\DebugWindow.resx">
+      <DependentUpon>DebugWindow.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>COPY "J:\Users\Administrator\Source\Repos\TGMT-CBTC-EX\TGMT-CBTC-EX\$(OutDir)\$(TargetFileName)" "I:\BveTs\Scenarios\TGMT_i\AtsEX\AtsEXPlugins\$(TargetFileName)"</PostBuildEvent>
+  </PropertyGroup>
+</Project>
