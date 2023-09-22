@@ -10,7 +10,7 @@ copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
 
 1.Some pictures in the Icons folder are drawn by Zbx1425. 
-  The files in the Icons folder are not allowed to be MODIFIED or REUSED in ANY WAY.
+  The files in the Icons folder are not allowed to be MODIFIED or REUSED in ANY WAY and are outside the scope of this license.
 
 2.SIEMENS and Trainguard MT are trademarks held by Siemens AG. 
   Files referring to these trademarks are outside the scope of this license.
