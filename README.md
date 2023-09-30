@@ -13,7 +13,7 @@ You will need **AtsEX** to run this plugin, visit the [AtsEX repository](https:/
 
 Currently please build the plugin yourself and configure **AtsEX.Caller** correctly.  
 
-Please refer to the [Wiki](https://github.com/winup-zhou/TGMT-CBTC-EX/wiki/) for the configuration of this plugin, which is currently only available in Chinese.
+See the [Wiki page](https://github.com/winup-zhou/TGMT-CBTC-EX/wiki/) for this repository for player and developer instructions, which are currently only available in Chinese.
 
 ## Notices
 
