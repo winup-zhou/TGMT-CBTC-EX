@@ -13,7 +13,7 @@ You will need **AtsEX** to run this plugin, visit the [AtsEX repository](https:/
 
 Currently please build the plugin yourself and configure **AtsEX.Caller** correctly.  
 
-## Agreements to be followed when using
+## Notices
 
 1. This repository is open source in accordance with the **MIT license**, but the files in the **Icons** folder are not allowed to be **MODIFIED or REUSED in ANY WAY**. 
 2. **SIEMENS** and **Trainguard MT** are trademarks held by Siemens AG. Files referring to these trademarks are outside the scope of MIT license.
