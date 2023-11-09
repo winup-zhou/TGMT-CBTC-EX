@@ -16,8 +16,19 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Restore dependencies
-      run: dotnet restore
+    - uses: actions/cache@v3
+      with:
+        path: ~/.nuget/packages
+        # Look to see if there is a cache hit for the corresponding requirements file
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+            ${{ runner.os }}-nuget
+    - name: Install dependencies
+      run: dotnet add package AtsEx.PluginHost
+    - name: Install dependencies
+      run: dotnet add package AtsEx.CoreExtensions 
+    - name: Install dependencies
+      run: dotnet add package SlimDX
     - name: Build
       run: dotnet build
     - name: Test
