@@ -88,6 +88,9 @@
       <Version>1.0.0</Version>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\%24this.Icon.ico" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>COPY "J:\Users\Administrator\Source\Repos\TGMT-CBTC-EX\TGMT-CBTC-EX\$(OutDir)\$(TargetFileName)" "I:\BveTs\Scenarios\TGMT_i\AtsEX\AtsEXPlugins\$(TargetFileName)"</PostBuildEvent>
