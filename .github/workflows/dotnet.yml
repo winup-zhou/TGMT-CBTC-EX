@@ -26,8 +26,6 @@ jobs:
         key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
         restore-keys: |
          ${{ runner.os }}-nuget
-    - name: Manually Install System.Resources.Extensions 
-      run: dotnet add package System.Resources.Extensions --version 7.0.0
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
