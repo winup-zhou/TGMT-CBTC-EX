@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 
 
-namespace TGMTAts {
+namespace TGMTAts.OBCU {
     public class TrackLimit : SpeedLimit {
         public List<SpeedLimit> trackLimits = new List<SpeedLimit>();
         public SpeedLimit last = SpeedLimit.inf;

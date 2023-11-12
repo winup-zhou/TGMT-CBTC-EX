@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 
 
-namespace TGMTAts {
+namespace TGMTAts.OBCU {
     public static class StationManager {
 
         public class Station {

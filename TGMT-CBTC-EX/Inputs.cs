@@ -4,7 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using AtsEx.PluginHost.Plugins;
 
-namespace TGMTAts{
+namespace TGMTAts.OBCU{
     public partial class TGMTAts : AssemblyPluginBase {
 
         private static bool a1Down, b1Down;

@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 
-namespace TGMTAts {
+namespace TGMTAts.OBCU {
 
     static class GDI32 {
         // Rectangle

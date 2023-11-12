@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace TGMTAts {
+namespace TGMTAts.OBCU {
 
     static class Ato {
 

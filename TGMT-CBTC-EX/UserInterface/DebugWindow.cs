@@ -8,7 +8,7 @@ using System.Text;
 
 using System.Windows.Forms;
 
-namespace TGMTAts {
+namespace TGMTAts.OBCU {
     public partial class DebugWindow : Form {
 
         public DebugWindow() {

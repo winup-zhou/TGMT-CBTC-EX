@@ -8,7 +8,7 @@ using System.Reflection;
 using System.Text;
 using Zbx1425.DXDynamicTexture;
 
-namespace TGMTAts {
+namespace TGMTAts.OBCU {
 
     public static class TGMTPainter {
 

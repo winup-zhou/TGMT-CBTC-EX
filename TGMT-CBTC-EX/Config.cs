@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
-namespace TGMTAts {
+namespace TGMTAts.OBCU {
 
     public static class Config {
 

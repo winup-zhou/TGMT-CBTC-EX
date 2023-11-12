@@ -14,9 +14,13 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace TGMTAts {
+using MapPlugin = TGMTAts.WCU.PluginMain;
+
+namespace TGMTAts.OBCU {
     [PluginType(PluginType.VehiclePlugin)]
     public partial class TGMTAts : AssemblyPluginBase {
+        public static MapPlugin mapPlugin;
+
         internal static SpeedLimit nextLimit;
 
         public static SpeedLimit movementEndpoint = SpeedLimit.inf;
@@ -50,7 +54,13 @@ namespace TGMTAts {
             Native.DoorOpened += DoorOpen;
             Native.Started += Initialize;
 
+            Plugins.AllPluginsLoaded += OnAllPluginsLoaded;
+
             vehicleSpec = Native.VehicleSpec;
+        }
+
+        private void OnAllPluginsLoaded(object sender, EventArgs e) {
+            mapPlugin = Plugins[PluginType.MapPlugin]["TGMT_WCU_Plugin"] as MapPlugin;
         }
 
         public override TickResult Tick(TimeSpan elapsed) {
@@ -109,13 +119,13 @@ namespace TGMTAts {
                     if (selectedMode > 0 && driveMode == 0) driveMode = 1;
                     maximumCurve = CalculatedLimit.Calculate(location,
                         Config.EbPatternDeceleration, Config.RecommendSpeedOffset, movementEndpoint,
-                        PreTrainManager.GetEndpoint(), trackLimit);
+                        new SpeedLimit(0, mapPlugin.MovementAuthority - Config.CTCSafetyDistance), trackLimit);
                     targetCurve = CalculatedLimit.Calculate(location,
                         Config.EbPatternDeceleration, 0, movementEndpoint,
-                        PreTrainManager.GetEndpoint(), trackLimit);
+                        new SpeedLimit(0, mapPlugin.MovementAuthority - Config.CTCSafetyDistance), trackLimit);
                     recommendCurve = CalculatedLimit.Calculate(location,
                         Config.RecommendDeceleration, 0, StationManager.RecommendCurve(),
-                        PreTrainManager.GetEndpoint(), movementEndpoint, trackLimit);
+                        new SpeedLimit(0, mapPlugin.MovementAuthority - Config.CTCSafetyDistance), movementEndpoint, trackLimit);
                     break;
                 default:
                     // fallback

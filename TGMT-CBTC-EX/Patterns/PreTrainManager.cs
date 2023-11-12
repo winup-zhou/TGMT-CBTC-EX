@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace TGMTAts {
+
+namespace TGMTAts.OBCU {
     
     static class PreTrainManager {
 
@@ -39,7 +40,7 @@ namespace TGMTAts {
         }
 
         public static SpeedLimit GetEndpoint() {
-            if (Commands.Count == 0) return SpeedLimit.inf;
+            /*if (Commands.Count == 0) return SpeedLimit.inf;*/
             int pointer = 0;
             var time = TGMTAts.time;
             while (pointer < Commands.Count && Commands[pointer].Time < time) pointer++;
@@ -75,7 +76,7 @@ namespace TGMTAts {
                     }
                 }
                 lastTime = TGMTAts.time;
-                return new SpeedLimit(Math.Round(PreTrainSpeed), trainLocation - Config.CTCSafetyDistance);
+                return new SpeedLimit(Math.Round(PreTrainSpeed), /*trainLocation*/TGMTAts.mapPlugin.MovementAuthority - Config.CTCSafetyDistance);
             }
         }
     }

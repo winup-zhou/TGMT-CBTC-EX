@@ -10,7 +10,7 @@ using AtsEx.PluginHost.Plugins;
 using Zbx1425.DXDynamicTexture;
 using AtsEx.PluginHost;
 
-namespace TGMTAts {
+namespace TGMTAts.OBCU {
     public partial class TGMTAts : AssemblyPluginBase {
 
         public static int[] panel_ = new int[256];

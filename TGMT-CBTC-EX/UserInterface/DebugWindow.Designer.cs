@@ -1,4 +1,4 @@
-namespace TGMTAts {
+namespace TGMTAts.OBCU {
     partial class DebugWindow {
         /// <summary>
         /// Required designer variable.
