@@ -38,6 +38,9 @@ namespace TGMTAts.WCU {
 
             SectionManager sectionManager = e.Scenario.SectionManager;
             PreTrainPatch = Extensions.GetExtension<IPreTrainPatchFactory>().Patch(nameof(PreTrainPatch), sectionManager, new PreTrainLocationConverter(Train, sectionManager));
+
+            Section section = e.Scenario.SectionManager.Sections[2] as Section;
+            SignalPatch = Extensions.GetExtension<ISignalPatchFactory>().Patch(nameof(SignalPatch), section, source => 0);
         }
 
         public override void Dispose() {
