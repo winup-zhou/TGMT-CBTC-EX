@@ -1,21 +1,27 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+using System.Reflection;
 
 using BveTypes.ClassWrappers;
 using AtsEx.Extensions.SignalPatch;
 using AtsEx.PluginHost;
 using AtsEx.PluginHost.Plugins;
 using AtsEx.Extensions.PreTrainPatch;
+using System.IO;
 
 namespace TGMTAts.WCU {
     [PluginType(PluginType.MapPlugin)]
     public class PluginMain : AssemblyPluginBase {
+        static PluginMain() {
+            Config.Load(Path.Combine(Config.PluginDir, "TGMT_WCUConfig.txt"));
+        }
+
+        public static double TGMTTerrtoryStart = 0;
+        public static double TGMTTerrtoryEnd = 100000000;
+
         public double MovementAuthority { get; set; } = 0;
         public int OBCULevel { get; set; } = 0;
+        public double SelfTrainLocation { get; set; } = 0;
+
         private SignalPatch SignalPatch;
         private Train Train;
         private PreTrainPatch PreTrainPatch;
@@ -34,11 +40,11 @@ namespace TGMTAts.WCU {
 
 
         private void OnScenarioCreated(ScenarioCreatedEventArgs e) {
-            if (!e.Scenario.Trains.ContainsKey("pretrain")) {
-                throw new BveFileLoadException("キーが 'PreTrain' の他列車が見つかりませんでした。", "TGMT-CBTC-EX_WCU");
+            if (!e.Scenario.Trains.ContainsKey(Config.PretrainName)) {
+                throw new BveFileLoadException(string.Format("キーが {0} の他列車が見つかりませんでした。", Config.PretrainName), "TGMT-CBTC-EX_WCU");
             }
 
-            Train = e.Scenario.Trains["pretrain"];
+            Train = e.Scenario.Trains[Config.PretrainName];
 
             sectionManager = e.Scenario.SectionManager;
             PreTrainPatch = Extensions.GetExtension<IPreTrainPatchFactory>().Patch(nameof(PreTrainPatch), sectionManager, new PreTrainLocationConverter(Train, sectionManager));
@@ -61,15 +67,26 @@ namespace TGMTAts.WCU {
             }
 
             public PreTrainLocation Convert(PreTrainLocation source)
-                => SourceTrain.TrainInfo.TrackKey == "" ? PreTrainLocation.FromLocation(SourceTrain.Location, SectionManager) : source;
+                => SourceTrain.TrainInfo.TrackKey == Config.PretrainTrackkey ? PreTrainLocation.FromLocation(SourceTrain.Location, SectionManager) : source;
         }
 
         public override TickResult Tick(TimeSpan elapsed) {
             if(OBCULevel == 2) {
-
+                MovementAuthority = Train.Location;
+                for(int i = 0; i < sectionManager.Sections.Count; ++i) {
+                    if (sectionManager.Sections[i].Location >= SelfTrainLocation && sectionManager.Sections[i].Location < Train.Location) {
+                        SignalPatch = Extensions.GetExtension<ISignalPatchFactory>().Patch(nameof(SignalPatch), sectionManager.Sections[i] as Section, source => 255);
+                    }
+                } 
+            } else {
+                sectionManager.UpdatePreTrainSection();
+             /*   for (int i = 0; i < sectionManager.Sections.Count; ++i) {
+                    if (sectionManager.Sections[i].Location >= SelfTrainLocation && sectionManager.Sections[i].Location < Train.Location) {
+                        section = sectionManager.Sections[i] as Section;
+                        SignalPatch = Extensions.GetExtension<ISignalPatchFactory>().Patch(nameof(SignalPatch), section, source => section.CurrentSignalIndex);
+                    }
+                }*/
             }
-
-            MovementAuthority = Train.Location;
 
             return new MapPluginTickResult();
         }

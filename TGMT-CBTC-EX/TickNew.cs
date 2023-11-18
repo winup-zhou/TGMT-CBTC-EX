@@ -163,6 +163,7 @@ namespace TGMTAts.OBCU {
             panel_[25] = signalMode;
             panel_[28] = (driveMode > 0) ? (driveMode > 1 ? doorMode : 1) : 0;
             mapPlugin.OBCULevel = signalMode;
+            mapPlugin.SelfTrainLocation = state.Location;
 
             // 显示临时预选模式
             if (state.Speed != 0 || time > selectModeStartTime + Config.ModeSelectTimeout * 1000) {

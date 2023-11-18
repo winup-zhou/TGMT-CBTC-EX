@@ -76,7 +76,7 @@
       <Version>1.0.0-rc1</Version>
     </PackageReference>
     <PackageReference Include="AtsEx.PluginHost">
-      <Version>1.0.0-rc1</Version>
+      <Version>1.0.0-rc3</Version>
     </PackageReference>
     <PackageReference Include="Lib.Harmony">
       <Version>2.2.2</Version>
