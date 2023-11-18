@@ -40,7 +40,7 @@ namespace TGMTAts.OBCU {
         }
 
         public static SpeedLimit GetEndpoint() {
-            /*if (Commands.Count == 0) return SpeedLimit.inf;*/
+            if (Commands.Count == 0) return new SpeedLimit(0, TGMTAts.mapPlugin.MovementAuthority - Config.CTCSafetyDistance);
             int pointer = 0;
             var time = TGMTAts.time;
             while (pointer < Commands.Count && Commands[pointer].Time < time) pointer++;
@@ -76,7 +76,7 @@ namespace TGMTAts.OBCU {
                     }
                 }
                 lastTime = TGMTAts.time;
-                return new SpeedLimit(Math.Round(PreTrainSpeed), /*trainLocation*/TGMTAts.mapPlugin.MovementAuthority - Config.CTCSafetyDistance);
+                return new SpeedLimit(Math.Round(PreTrainSpeed), trainLocation);
             }
         }
     }

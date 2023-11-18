@@ -15,17 +15,21 @@ namespace TGMTAts.WCU {
     [PluginType(PluginType.MapPlugin)]
     public class PluginMain : AssemblyPluginBase {
         public double MovementAuthority { get; set; } = 0;
-        public int WaySideStatus { get; set; } = 0;
+        public int OBCULevel { get; set; } = 0;
         private SignalPatch SignalPatch;
         private Train Train;
         private PreTrainPatch PreTrainPatch;
+        private SectionManager sectionManager;
+        private Section section;
+
+
         public PluginMain(PluginBuilder builder) : base(builder) {
             Plugins.AllPluginsLoaded += OnAllPluginsLoaded;
             BveHacker.ScenarioCreated += OnScenarioCreated;
         }
 
         private void OnAllPluginsLoaded(object sender, EventArgs e) {
-            MovementAuthority = WaySideStatus = 0;
+            MovementAuthority = OBCULevel = 0;
         }
 
 
@@ -36,11 +40,9 @@ namespace TGMTAts.WCU {
 
             Train = e.Scenario.Trains["pretrain"];
 
-            SectionManager sectionManager = e.Scenario.SectionManager;
+            sectionManager = e.Scenario.SectionManager;
             PreTrainPatch = Extensions.GetExtension<IPreTrainPatchFactory>().Patch(nameof(PreTrainPatch), sectionManager, new PreTrainLocationConverter(Train, sectionManager));
 
-            Section section = e.Scenario.SectionManager.Sections[2] as Section;
-            SignalPatch = Extensions.GetExtension<ISignalPatchFactory>().Patch(nameof(SignalPatch), section, source => 0);
         }
 
         public override void Dispose() {
@@ -59,10 +61,13 @@ namespace TGMTAts.WCU {
             }
 
             public PreTrainLocation Convert(PreTrainLocation source)
-                => SourceTrain.TrainInfo.TrackKey == "0" ? PreTrainLocation.FromLocation(SourceTrain.Location, SectionManager) : source;
+                => SourceTrain.TrainInfo.TrackKey == "" ? PreTrainLocation.FromLocation(SourceTrain.Location, SectionManager) : source;
         }
 
         public override TickResult Tick(TimeSpan elapsed) {
+            if(OBCULevel == 2) {
+
+            }
 
             MovementAuthority = Train.Location;
 

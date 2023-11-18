@@ -119,13 +119,13 @@ namespace TGMTAts.OBCU {
                     if (selectedMode > 0 && driveMode == 0) driveMode = 1;
                     maximumCurve = CalculatedLimit.Calculate(location,
                         Config.EbPatternDeceleration, Config.RecommendSpeedOffset, movementEndpoint,
-                        new SpeedLimit(0, mapPlugin.MovementAuthority - Config.CTCSafetyDistance), trackLimit);
+                        PreTrainManager.GetEndpoint(), trackLimit);
                     targetCurve = CalculatedLimit.Calculate(location,
                         Config.EbPatternDeceleration, 0, movementEndpoint,
-                        new SpeedLimit(0, mapPlugin.MovementAuthority - Config.CTCSafetyDistance), trackLimit);
+                        PreTrainManager.GetEndpoint(), trackLimit);
                     recommendCurve = CalculatedLimit.Calculate(location,
                         Config.RecommendDeceleration, 0, StationManager.RecommendCurve(),
-                        new SpeedLimit(0, mapPlugin.MovementAuthority - Config.CTCSafetyDistance), movementEndpoint, trackLimit);
+                        PreTrainManager.GetEndpoint(), movementEndpoint, trackLimit);
                     break;
                 default:
                     // fallback
@@ -162,6 +162,7 @@ namespace TGMTAts.OBCU {
             panel_[24] = driveMode;
             panel_[25] = signalMode;
             panel_[28] = (driveMode > 0) ? (driveMode > 1 ? doorMode : 1) : 0;
+            mapPlugin.OBCULevel = signalMode;
 
             // 显示临时预选模式
             if (state.Speed != 0 || time > selectModeStartTime + Config.ModeSelectTimeout * 1000) {
@@ -171,6 +172,31 @@ namespace TGMTAts.OBCU {
             if (selectingMode >= 0) {
                 ackMessage = 4;
                 panel_[22] = time % 500 < 250 ? selectingMode : 6;
+            }
+
+
+            panel_[29] = 0;
+            //PSD信息
+            if (signalMode >= 2 && state.Speed == 0) {
+                if (doorOpen) {
+                    if (time - doorOpenTime >= 1000) {
+                        panel_[29] = 3;
+                        targetDistance = 0;
+                        targetSpeed = -10;
+                        recommendSpeed = ebSpeed = 0;
+                    } else {
+                        panel_[29] = 0;
+                    }
+                } else {
+                    if (time - doorCloseTime >= 1000) {
+                        panel_[29] = 0;
+                    } else {
+                        panel_[29] = 3;
+                        targetDistance = 0;
+                        targetSpeed = -10;
+                        recommendSpeed = ebSpeed = 0;
+                    }
+                }
             }
 
             // 显示目标速度、建议速度、干预速度
@@ -198,17 +224,17 @@ namespace TGMTAts.OBCU {
             targetSpeed = Math.Min(targetSpeed, Config.MaxSpeed);
             panel_[17] = (int)targetSpeed;
             panel_[18] = (targetSpeed < 0) ? 1 : 0;
-            panel_[29] = panel_[31] = 0;
+            panel_[31] = 0;
 
-            // 显示出发与屏蔽门信息
+            // 显示出发信息
             if (signalMode > 1 && state.Speed == 0) {
                 if (Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow
                     && time > StationManager.NextStation.DepartureTime - Config.DepartRequestTime * 1000 && !doorOpen && StationManager.Arrived
-                    && time >= StationManager.NextStation.RouteOpenTime) {
+                    && time >= StationManager.NextStation.RouteOpenTime && panel_[29] != 3) {
                     panel_[32] = 2;
                 } else if (Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow
                     && time - doorOpenTime >= Config.CloseRequestShowTime * 1000 && doorOpen && time > StationManager.NextStation.DepartureTime - (Config.DepartRequestTime + 20) * 1000
-                    && StationManager.Arrived && time >= StationManager.NextStation.RouteOpenTime) {
+                    && StationManager.Arrived && time >= StationManager.NextStation.RouteOpenTime && panel_[29] != 3) {
                     panel_[32] = 1;
                     atsSound1.Play();
                 } else if (Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow
@@ -220,21 +246,7 @@ namespace TGMTAts.OBCU {
             } else {
                 panel_[32] = 0;
             }
-            if (signalMode >= 2 && state.Speed == 0) {
-                if (doorOpen) {
-                    if (time - doorOpenTime >= 1000) {
-                        panel_[29] = 3;
-                    } else {
-                        panel_[29] = 0;
-                    }
-                } else {
-                    if (time - doorCloseTime >= 1000) {
-                        panel_[29] = 0;
-                    } else {
-                        panel_[29] = 3;
-                    }
-                }
-            }
+            
 
             // 如果没有无线电，显示无线电故障
             panel_[23] = state.Speed == 0 ? 0 : 1;
