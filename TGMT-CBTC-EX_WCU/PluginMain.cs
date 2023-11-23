@@ -26,7 +26,6 @@ namespace TGMTAts.WCU {
         private Train Train;
         private PreTrainPatch PreTrainPatch;
         private SectionManager sectionManager;
-        private Section section;
 
 
         public PluginMain(PluginBuilder builder) : base(builder) {
@@ -79,13 +78,16 @@ namespace TGMTAts.WCU {
                     }
                 } 
             } else {
-                sectionManager.UpdatePreTrainSection();
-             /*   for (int i = 0; i < sectionManager.Sections.Count; ++i) {
-                    if (sectionManager.Sections[i].Location >= SelfTrainLocation && sectionManager.Sections[i].Location < Train.Location) {
-                        section = sectionManager.Sections[i] as Section;
-                        SignalPatch = Extensions.GetExtension<ISignalPatchFactory>().Patch(nameof(SignalPatch), section, source => section.CurrentSignalIndex);
+                for (int i = 0; i < sectionManager.Sections.Count; ++i) {
+                    if (sectionManager.Sections[i].Location >= SelfTrainLocation 
+                        && sectionManager.Sections[i].Location < Train.Location
+                        && sectionManager.Sections[i].Location >= TGMTTerrtoryStart 
+                        && sectionManager.Sections[i].Location < TGMTTerrtoryEnd) { 
+                        Section section = sectionManager.Sections[i] as Section;
+                        int CurrentSignalIndex = section.CurrentSignalIndex;
+                        SignalPatch = Extensions.GetExtension<ISignalPatchFactory>().Patch(nameof(SignalPatch), section, source => CurrentSignalIndex);
                     }
-                }*/
+                }
             }
 
             return new MapPluginTickResult();

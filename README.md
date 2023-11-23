@@ -13,13 +13,17 @@ This is an AtsEX-based rebuilt version of the [TGMT-CBTC plugin developed by Zbx
 [The MIT License](LICENSE)
 
 ## Dependencies
-### [TGMT-CBTC](https://github.com/zbx1425/TGMT-CBTC) (MIT)
-
-Copyright (c) 2021 zbx1425
-
 ### [AtsEX](https://github.com/automatic9045/AtsEX) (MIT)
 
 Copyright (c) 2022 automatic9045
+
+### [DXDynamicTexture](https://github.com/zbx1425/DXDynamicTexture) (MIT)
+
+Copyright (c) 2021 zbx1425
+
+### [TGMT-CBTC](https://github.com/zbx1425/TGMT-CBTC) (MIT)
+
+Copyright (c) 2021 zbx1425
 
 ## Installation
 You will need **AtsEX** to run this plugin, visit the [AtsEX repository](https://github.com/automatic9045/AtsEX) to download it and see the [AtsEX author's instructions for AtsEX installation](https://automatic9045.github.io/contents/bve/AtsEX/).  
