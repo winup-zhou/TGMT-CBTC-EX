@@ -17,6 +17,7 @@ namespace TGMTAts.WCU {
         public static double TGMTTerrtoryEnd = 100000000;
         public static string PretrainName = "pretrain";
         public static string PretrainTrackkey = "";
+        public static double CTCSignalIndex = 255;
 
 
         private static void Cfg(this Dictionary<string, string> configDict, string key, ref double param) {
@@ -79,7 +80,7 @@ namespace TGMTAts.WCU {
             dict.Cfg("TGMTTerrtoryEnd", ref TGMTTerrtoryEnd);
             dict.Cfg("PretrainName", ref PretrainName);
             dict.Cfg("PretrainTrackkey", ref PretrainTrackkey);
-
+            dict.Cfg("CTCSignalIndex", ref CTCSignalIndex);
         }
     }
 }

@@ -8,6 +8,8 @@ using AtsEx.PluginHost.Plugins;
 using AtsEx.Extensions.PreTrainPatch;
 using System.IO;
 
+
+
 namespace TGMTAts.WCU {
     [PluginType(PluginType.MapPlugin)]
     public class PluginMain : AssemblyPluginBase {
@@ -73,8 +75,11 @@ namespace TGMTAts.WCU {
             if(OBCULevel == 2) {
                 MovementAuthority = Train.Location;
                 for(int i = 0; i < sectionManager.Sections.Count; ++i) {
-                    if (sectionManager.Sections[i].Location >= SelfTrainLocation && sectionManager.Sections[i].Location < Train.Location) {
-                        SignalPatch = Extensions.GetExtension<ISignalPatchFactory>().Patch(nameof(SignalPatch), sectionManager.Sections[i] as Section, source => 255);
+                    if (sectionManager.Sections[i].Location >= SelfTrainLocation
+                        && sectionManager.Sections[i].Location < Train.Location
+                        && sectionManager.Sections[i].Location >= TGMTTerrtoryStart
+                        && sectionManager.Sections[i].Location < TGMTTerrtoryEnd) {
+                        SignalPatch = Extensions.GetExtension<ISignalPatchFactory>().Patch(nameof(SignalPatch), sectionManager.Sections[i] as Section, source => (int)Config.CTCSignalIndex);
                     }
                 } 
             } else {
@@ -83,9 +88,7 @@ namespace TGMTAts.WCU {
                         && sectionManager.Sections[i].Location < Train.Location
                         && sectionManager.Sections[i].Location >= TGMTTerrtoryStart 
                         && sectionManager.Sections[i].Location < TGMTTerrtoryEnd) { 
-                        Section section = sectionManager.Sections[i] as Section;
-                        int CurrentSignalIndex = section.CurrentSignalIndex;
-                        SignalPatch = Extensions.GetExtension<ISignalPatchFactory>().Patch(nameof(SignalPatch), section, source => CurrentSignalIndex);
+                        SignalPatch = Extensions.GetExtension<ISignalPatchFactory>().Patch(nameof(SignalPatch), sectionManager.Sections[i] as Section, source => source);
                     }
                 }
             }
