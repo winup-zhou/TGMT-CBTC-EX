@@ -7,6 +7,7 @@ using AtsEx.PluginHost;
 using AtsEx.PluginHost.Plugins;
 using AtsEx.Extensions.PreTrainPatch;
 using System.IO;
+using System.Collections.Generic;
 
 
 
@@ -17,14 +18,11 @@ namespace TGMTAts.WCU {
             Config.Load(Path.Combine(Config.PluginDir, "TGMT_WCUConfig.txt"));
         }
 
-        public static double TGMTTerrtoryStart = 0;
-        public static double TGMTTerrtoryEnd = 100000000;
-
         public double MovementAuthority { get; set; } = 0;
         public int OBCULevel { get; set; } = 0;
         public double SelfTrainLocation { get; set; } = 0;
 
-        private SignalPatch SignalPatch;
+        private List<SignalPatch> SignalPatch = new List<SignalPatch>();
         private Train Train;
         private PreTrainPatch PreTrainPatch;
         private SectionManager sectionManager;
@@ -49,13 +47,21 @@ namespace TGMTAts.WCU {
 
             sectionManager = e.Scenario.SectionManager;
             PreTrainPatch = Extensions.GetExtension<IPreTrainPatchFactory>().Patch(nameof(PreTrainPatch), sectionManager, new PreTrainLocationConverter(Train, sectionManager));
-
+            int pointer = 0;
+            while (pointer < sectionManager.Sections.Count - 1) {
+                SignalPatch.Add(Extensions.GetExtension<ISignalPatchFactory>().Patch(nameof(SignalPatch), sectionManager.Sections[pointer] as Section,
+                    source => (sectionManager.Sections[pointer].Location >= SelfTrainLocation && sectionManager.Sections[pointer].Location >= Config.TGMTTerrtoryStart
+                    && sectionManager.Sections[pointer].Location < Config.TGMTTerrtoryEnd) ? (OBCULevel == 2) ? (int)Config.CTCSignalIndex : source : source));
+                ++pointer;
+            }
+                
         }
 
         public override void Dispose() {
-            SignalPatch?.Dispose();
+            for (int i = 0; i < SignalPatch.Count; ++i) SignalPatch[i]?.Dispose();
             PreTrainPatch?.Dispose();
             Plugins.AllPluginsLoaded -= OnAllPluginsLoaded;
+            BveHacker.ScenarioCreated -= OnScenarioCreated;
         }
 
         private class PreTrainLocationConverter : IPreTrainLocationConverter {
@@ -72,28 +78,12 @@ namespace TGMTAts.WCU {
         }
 
         public override TickResult Tick(TimeSpan elapsed) {
-            if(OBCULevel == 2) {
-                MovementAuthority = Train.Location;
-                for(int i = 0; i < sectionManager.Sections.Count; ++i) {
-                    if (sectionManager.Sections[i].Location >= SelfTrainLocation
-                        && sectionManager.Sections[i].Location < Train.Location
-                        && sectionManager.Sections[i].Location >= TGMTTerrtoryStart
-                        && sectionManager.Sections[i].Location < TGMTTerrtoryEnd) {
-                        SignalPatch = Extensions.GetExtension<ISignalPatchFactory>().Patch(nameof(SignalPatch), sectionManager.Sections[i] as Section, source => (int)Config.CTCSignalIndex);
-                    }
-                } 
-            } else {
-                for (int i = 0; i < sectionManager.Sections.Count; ++i) {
-                    if (sectionManager.Sections[i].Location >= SelfTrainLocation 
-                        && sectionManager.Sections[i].Location < Train.Location
-                        && sectionManager.Sections[i].Location >= TGMTTerrtoryStart 
-                        && sectionManager.Sections[i].Location < TGMTTerrtoryEnd) { 
-                        SignalPatch = Extensions.GetExtension<ISignalPatchFactory>().Patch(nameof(SignalPatch), sectionManager.Sections[i] as Section, source => source);
-                    }
-                }
-            }
+
+            MovementAuthority = Train.Location;
 
             return new MapPluginTickResult();
         }
+
+
     }
 }

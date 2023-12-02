@@ -178,24 +178,26 @@ namespace TGMTAts.OBCU {
 
             panel_[29] = 0;
             //PSD信息
-            if (signalMode >= 2 && state.Speed == 0) {
+            if (signalMode >= 1 && deviceCapability == 2 && state.Speed == 0) {
                 if (doorOpen) {
                     if (time - doorOpenTime >= 1000) {
                         panel_[29] = 3;
                         targetDistance = 0;
                         targetSpeed = -10;
-                        recommendSpeed = ebSpeed = 0;
+                        ebSpeed = recommendSpeed = 0;
                     } else {
                         panel_[29] = 0;
                     }
                 } else {
                     if (time - doorCloseTime >= 1000) {
                         panel_[29] = 0;
-                    } else {
+                    } else if(StationManager.Arrived) {
                         panel_[29] = 3;
                         targetDistance = 0;
                         targetSpeed = -10;
-                        recommendSpeed = ebSpeed = 0;
+                        ebSpeed = recommendSpeed = 0;
+                    } else {
+                        panel_[29] = 0;
                     }
                 }
             }
@@ -206,13 +208,15 @@ namespace TGMTAts.OBCU {
                 && time < StationManager.NextStation.RouteOpenTime) {
                 targetDistance = 0;
                 targetSpeed = -10;
-                recommendSpeed = ebSpeed = 0;
+                ebSpeed = recommendSpeed = 0;
             }
 
             if (doorOpen) {
                 targetDistance = 0;
                 targetSpeed = -10;
+                ebSpeed = recommendSpeed = 0;
             }
+
             panel_[11] = distanceToPixel(targetDistance);
             panel_[19] = (int)targetDistance;
             panel_[16] = (int)(ebSpeed * speedMultiplier);
@@ -235,7 +239,7 @@ namespace TGMTAts.OBCU {
                     panel_[32] = 2;
                 } else if (Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow
                     && time - doorOpenTime >= Config.CloseRequestShowTime * 1000 && doorOpen && time > StationManager.NextStation.DepartureTime - (Config.DepartRequestTime + 20) * 1000
-                    && StationManager.Arrived && time >= StationManager.NextStation.RouteOpenTime && panel_[29] != 3) {
+                    && StationManager.Arrived && time >= StationManager.NextStation.RouteOpenTime) {
                     panel_[32] = 1;
                     atsSound1.Play();
                 } else if (Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow

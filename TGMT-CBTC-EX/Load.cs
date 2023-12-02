@@ -9,6 +9,7 @@ using System.Reflection;
 using AtsEx.PluginHost.Plugins;
 using Zbx1425.DXDynamicTexture;
 using AtsEx.PluginHost;
+using AtsEx.PluginHost.Input.Native;
 
 namespace TGMTAts.OBCU {
     public partial class TGMTAts : AssemblyPluginBase {
@@ -115,6 +116,21 @@ namespace TGMTAts.OBCU {
             TGMTPainter.Dispose();
             hHMITex.Dispose();
             hTDTTex.Dispose();
+
+            Native.NativeKeys.AtsKeys[NativeAtsKeyName.A1].Pressed -= OnA1Pressed;
+            Native.NativeKeys.AtsKeys[NativeAtsKeyName.B1].Pressed -= OnB1Pressed;
+            Native.NativeKeys.AtsKeys[NativeAtsKeyName.B2].Pressed -= OnB2Pressed;
+            Native.NativeKeys.AtsKeys[NativeAtsKeyName.C1].Pressed -= OnC1Pressed;
+            Native.NativeKeys.AtsKeys[NativeAtsKeyName.C2].Pressed -= OnC2Pressed;
+            Native.NativeKeys.AtsKeys[NativeAtsKeyName.A1].Released -= OnA1Up;
+            Native.NativeKeys.AtsKeys[NativeAtsKeyName.B1].Released -= OnB1Up;
+
+            Native.BeaconPassed -= SetBeaconData;
+            Native.DoorClosed -= DoorClose;
+            Native.DoorOpened -= DoorOpen;
+            Native.Started -= Initialize;
+
+            Plugins.AllPluginsLoaded -= OnAllPluginsLoaded;
             //TextureManager.Dispose();
         }
 
