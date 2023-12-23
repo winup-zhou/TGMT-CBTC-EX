@@ -1,5 +1,7 @@
 # Trainguard MT CBTC (AtsEX version)
 
+[![MSBuild](https://github.com/winup-zhou/TGMT-CBTC-EX/actions/workflows/build.yml/badge.svg?branch=develop)](https://github.com/winup-zhou/TGMT-CBTC-EX/actions/workflows/build.yml)
+
 ## Overview
 BVE5/6 implementation of the advanced Siemens Trainguard MT CBTC ATP+ATO signalling system.  
 
