@@ -27,7 +27,7 @@ jobs:
       uses: NuGet/setup-nuget@v1.2.0
 
     - name: Restore nuget packages
-      run: nuget restore TobuAts.sln
+      run: nuget restore TGMT-CBTC-EX.sln
 
     - name: MSBuild
       run: msbuild TGMT-CBTC-EX.sln /m /p:configuration="Release" /p:platform="Any CPU" /p:OutputPath="./out/"
