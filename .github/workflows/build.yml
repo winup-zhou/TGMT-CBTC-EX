@@ -38,9 +38,9 @@ jobs:
         ls -alR
         mkdir plugins/
         mkdir plugins/TGMT-CBTC-EX/
-        find . -type f -path '*/out/TGMT-CBTC-EX.dll' | xargs mv -t ./plugins/TGMT-CBTC-EX/
+        find . -type f -path '*/out/TGMT-CBTC-EX.dll' | xargs mv -t --force ./plugins/TGMT-CBTC-EX/
         mkdir plugins/TGMT-CBTC-EX_WCU/
-        find . -type f -path '*/out/TGMT-CBTC-EX_WCU.dll' | xargs mv -t ./plugins/TGMT-CBTC-EX_WCU/
+        find . -type f -path '*/out/TGMT-CBTC-EX_WCU.dll' | xargs mv -t --force ./plugins/TGMT-CBTC-EX_WCU/
       shell: bash
 
     - name: Upload artifact
