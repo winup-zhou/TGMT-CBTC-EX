@@ -28,10 +28,9 @@ jobs:
         shell: cmd
       - name: Collect artifact
         run: |
-          mkdir plugins/TGMT-CBTC-EX/
-          mkdir plugins/TGMT-CBTC-EX_WCU/
-          find . -type f -path '*/out/TGMT-CBTC-EX.dll' | xargs mv -t ./plugins/TGMT-CBTC-EX/
-          find . -type f -path '*/out/TGMT-CBTC-EX_WCU.dll' | xargs mv -t ./plugins/TGMT-CBTC-EX_WCU/
+          mkdir plugins/
+          find . -type f -path '*/out/*.dll' -name 'TGMT-CBTC-EX*' | xargs mv --force --backup=numbered -t ./plugins/
+          rm plugins/*~
         shell: bash
       - name: Check assembly version
         id: version
