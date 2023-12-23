@@ -68,6 +68,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>COPY "J:\Users\Administrator\Source\Repos\TGMT-CBTC-EX\TGMT-CBTC-EX_WCU\$(OutDir)\$(TargetFileName)" "I:\BveTs\Scenarios\新浜線(架空)\NiihamaLine\MapPlugins\$(TargetFileName)"</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
 </Project>
