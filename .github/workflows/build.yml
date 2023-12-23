@@ -30,7 +30,7 @@ jobs:
       run: nuget restore TobuAts.sln
 
     - name: MSBuild
-      run: msbuild TobuAts.sln /m /p:configuration="Release" /p:platform="Any CPU" /p:OutputPath="./out/"
+      run: msbuild TGMT-CBTC-EX.sln /m /p:configuration="Release" /p:platform="Any CPU" /p:OutputPath="./out/"
       shell: cmd
 
     - name: Collect artifact
