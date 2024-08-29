@@ -382,7 +382,7 @@ namespace TGMTAts.OBCU {
 
             // 显示TDT、车门使能，车门零速保护
             if (StationManager.NextStation != null) {
-                int sectogo = Convert.ToInt32((state.Time.TotalMilliseconds / 1000) - StationManager.NextStation.DepartureTime);
+                int sectogo = Convert.ToInt32((state.Time.TotalMilliseconds / 1000) - (StationManager.NextStation.DepartureTime / 1000));
                 if (StationManager.Arrived) {
                     // 已停稳，可开始显示TDT
                     if (location - StationManager.NextStation.StopPosition < Config.TDTFreezeDistance) {
