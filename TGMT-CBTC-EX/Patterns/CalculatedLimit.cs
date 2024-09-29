@@ -27,10 +27,16 @@ namespace TGMTAts.OBCU {
             }
             SpeedLimit nextLimit;
             if (pointer < limits.Length) {
-                for (int i = 0; i < limits.Length; i++) {
-                    nextTarget = Math.Min(nextTarget, limits[i].AtLocation(limits[pointer].Location, idealdecel, voffset));
+                var pointer_ = pointer;
+                for (int i = pointer; i < limits.Length; i++) {
+                    if (nextTarget > limits[i].AtLocation(limits[pointer].Location, idealdecel, voffset)) {
+                        pointer_ = i;
+                        break;
+                    } else {
+                        nextTarget = Math.Min(nextTarget, limits[i].AtLocation(limits[pointer].Location, idealdecel, voffset));
+                    }  
                 }
-                nextLimit = new SpeedLimit(nextTarget, limits[pointer].Location);
+                nextLimit = new SpeedLimit(limits[pointer_].Limit, limits[pointer_].Location);
             } else {
                 nextLimit = SpeedLimit.inf;
             }

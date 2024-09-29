@@ -420,7 +420,7 @@ namespace TGMTAts.OBCU {
                     // 在车站范围内
                     if (Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow) {
                         // 在停车窗口内
-                        if (state.Speed < 1) {
+                        if (state.Speed < 5) {
                             panel_[26] = 2;
                         } else {
                             panel_[26] = 1;
