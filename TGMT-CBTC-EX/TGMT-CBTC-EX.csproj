@@ -99,6 +99,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>COPY $(TargetPath) D:\Scenarios\TGMT_i\AtsEX\AtsEXPlugins\$(TargetFileName)</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
 </Project>
