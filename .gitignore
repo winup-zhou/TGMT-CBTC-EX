@@ -362,5 +362,5 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-TGMT-CBTC-EX.csproj
-TGMT-CBTC-EX_WCU.csproj
+**/TGMT-CBTC-EX.csproj
+**/TGMT-CBTC-EX_WCU.csproj
