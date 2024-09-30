@@ -143,16 +143,22 @@ namespace TGMTAts.OBCU {
                 nextLimit = targetCurve.NextLimit;
                 targetDistance = targetCurve.NextLimit.Location - location;
                 targetSpeed = targetCurve.NextLimit.Limit;
-                if (location > movementEndpoint.Location) {
-                    // 如果已冲出移动授权终点，释放速度无效
-                    if (releaseSpeed) Log("超出了移动授权终点, 释放速度无效");
-                    recommendSpeed = 0;
-                    ebSpeed = 0;
-                    releaseSpeed = false;
-                }
-                if (releaseSpeed) {
-                    ebSpeed = Math.Max(ebSpeed, Config.ReleaseSpeed);
-                    recommendSpeed = Math.Max(recommendSpeed, Config.ReleaseSpeed - Config.RecommendSpeedOffset);
+                if(signalMode == 1) {
+                    if (location > ITCNextSectionPos) {
+                        // 如果已冲出移动授权终点，释放速度无效
+                        if (releaseSpeed) Log("超出了移动授权终点, 释放速度无效");
+                        recommendSpeed = 0;
+                        ebSpeed = 0;
+                        releaseSpeed = false;
+                    }
+                    if (releaseSpeed) {
+                        if (location < ITCNextSectionPos && location > movementEndpoint.Location) {
+                            targetDistance = -10;
+                            targetSpeed = 0;
+                        }
+                        ebSpeed = Math.Max(ebSpeed, Config.ReleaseSpeed);
+                        recommendSpeed = Math.Max(recommendSpeed, Config.ReleaseSpeed - Config.RecommendSpeedOffset);
+                    }
                 }
             }
 
@@ -217,20 +223,6 @@ namespace TGMTAts.OBCU {
                 ebSpeed = recommendSpeed = 0;
             }
 
-            panel_[11] = distanceToPixel(targetDistance);
-            panel_[19] = (int)targetDistance;
-            panel_[16] = (int)(ebSpeed * speedMultiplier);
-            if (driveMode < 2) {
-                panel_[15] = (int)(recommendSpeed * speedMultiplier);
-            } else {
-                panel_[15] = -1;
-            }
-            distanceToColor(targetSpeed, targetDistance);
-            targetSpeed = Math.Min(targetSpeed, Config.MaxSpeed);
-            panel_[17] = (int)targetSpeed;
-            panel_[18] = (targetSpeed < 0) ? 1 : 0;
-            panel_[31] = 0;
-
             // 显示出发信息
             if (signalMode > 1 && state.Speed == 0) {
                 if (Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow
@@ -251,6 +243,20 @@ namespace TGMTAts.OBCU {
             } else {
                 panel_[32] = 0;
             }
+
+            panel_[11] = distanceToPixel(targetDistance);
+            panel_[19] = (int)targetDistance;
+            panel_[16] = (int)(ebSpeed * speedMultiplier);
+            if (driveMode < 2) {
+                panel_[15] = (int)(recommendSpeed * speedMultiplier);
+            } else {
+                panel_[15] = -1;
+            }
+            distanceToColor(targetSpeed, targetDistance);
+            targetSpeed = Math.Min(targetSpeed, Config.MaxSpeed);
+            panel_[17] = (int)targetSpeed;
+            panel_[18] = (targetSpeed < 0) ? 1 : 0;
+            panel_[31] = 0;
             
 
             // 如果没有无线电，显示无线电故障
@@ -298,7 +304,7 @@ namespace TGMTAts.OBCU {
                 if (state.Speed == 0 && handles.Power.Notch == 0) {
                     // 低于制动缓解速度
                     if (ebState > 0) {
-                        if (location > movementEndpoint.Location) {
+                        if (location > ITCNextSectionPos) {
                             // 冲出移动授权终点，要求RM
                             ackMessage = 6;
                         } else {
@@ -329,7 +335,7 @@ namespace TGMTAts.OBCU {
                         panel_[10] = 0;
                     }
                 }
-            } else if (signalMode == 1) {
+            } else if (signalMode == 1 && !doorOpen && panel_[29] != 3) {
                 // ITC下冲出移动授权终点。
                 if (state.Speed == 0) {
                     // 停稳后降级到RM模式。等待确认。
@@ -349,7 +355,8 @@ namespace TGMTAts.OBCU {
             if (state.Speed < 0.5 && handles.Power.Notch < 1 && handles.Brake.Notch < 1 && driveMode != 2) {
                 bCommand = Math.Min(Math.Max(bCommand, 1), handles.Brake.MaxServiceBrakeNotch);
             }
-            if (doorOpen) {
+
+            if (doorOpen || panel_[32] == 4) {
                 panel_[15] = -10 * speedMultiplier;
                 panel_[16] = 0;
                 if (handles.Brake.Notch < 4) bCommand = Math.Min(Math.Max(bCommand, 1), handles.Brake.MaxServiceBrakeNotch);

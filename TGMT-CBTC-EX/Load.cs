@@ -42,6 +42,7 @@ namespace TGMTAts.OBCU {
 
         public static int TrainNumber = 0;
         public static int DestinationNumber = 0;
+        public static double ITCNextSectionPos = 0;
 
         public static int VBCount = 0;
         public static int FBCount = 0;

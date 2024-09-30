@@ -26,15 +26,17 @@ namespace TGMTAts.OBCU {
                 currentTarget = Math.Min(currentTarget, limits[i].AtLocation(location, idealdecel, voffset));
             }
             SpeedLimit nextLimit;
+            var LimitSpeedDown = false;
             if (pointer < limits.Length) {
                 var pointer_ = pointer;
                 for (int i = pointer; i < limits.Length; i++) {
                     if (nextTarget > limits[i].AtLocation(limits[pointer].Location, idealdecel, voffset)) {
                         pointer_ = i;
-                        break;
+                        LimitSpeedDown = true;      
                     } else {
-                        nextTarget = Math.Min(nextTarget, limits[i].AtLocation(limits[pointer].Location, idealdecel, voffset));
-                    }  
+                        if (LimitSpeedDown) break;
+                    }
+                    nextTarget = Math.Min(nextTarget, limits[i].AtLocation(limits[pointer].Location, idealdecel, voffset));
                 }
                 nextLimit = new SpeedLimit(limits[pointer_].Limit, limits[pointer_].Location);
             } else {
