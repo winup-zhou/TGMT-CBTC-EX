@@ -40,13 +40,13 @@ namespace TGMTAts.OBCU {
                 decelB += 2;
             }
 
-            if (staDist < 0.6 && !StationManager.Arrived && !StationManager.NextStation.Pass) {
+            if (staDist < 0.6 && !StationManager.Arrived && !StationManager.NextStation.Pass && !TGMTAts.releaseSpeed) {
                 return 2; // 这大概停得住吧?
-            } else if (staDist < -0.3 && !StationManager.Arrived && !StationManager.NextStation.Pass) {
+            } else if (staDist < -0.3 && !StationManager.Arrived && !StationManager.NextStation.Pass && !TGMTAts.releaseSpeed) {
                 return 5; // 好像要冲标了，赶紧停车
             //} else if (staDist < 20 && !StationManager.Arrived) {
             //    return Math.Min(decelA, decelB);
-            } else if (staDist > 20 && recSpeed < 3) {
+            } else if (staDist > 20 && recSpeed < 3 && !TGMTAts.releaseSpeed) {
                 return 2; // 到移动授权终点了?
             } else {
                 return decelB;

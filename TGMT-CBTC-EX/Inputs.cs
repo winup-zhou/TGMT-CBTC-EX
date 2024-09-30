@@ -117,13 +117,15 @@ namespace TGMTAts.OBCU{
                     FixIncompatibleModes();
                     if (signalMode == 1) {
                         if (e.SignalIndex > 0) {
+                            ITCNextSectionPos = e.Optional;
                             Log("移动授权延伸到 " + e.Optional);
                             // 延伸移动授权终点
-                            movementEndpoint = new SpeedLimit(0, e.Optional);
+                            movementEndpoint = new SpeedLimit(0, e.Optional - Config.ITCSafetyDistance);
                             releaseSpeed = false;
                         } else {
+                            ITCNextSectionPos = location + e.Distance;
                             Log("红灯 移动授权终点是 " + location + e.Distance);
-                            movementEndpoint = new SpeedLimit(0, location + e.Distance);
+                            movementEndpoint = new SpeedLimit(0, location + e.Distance - Config.ITCSafetyDistance);
                         }
                     }
                     break;
@@ -139,6 +141,7 @@ namespace TGMTAts.OBCU{
             driveMode = 1;
             FixIncompatibleModes();
 
+            ITCNextSectionPos = 0;
             movementEndpoint = SpeedLimit.inf;
             nextLimit = null;
             selectingMode = -1;

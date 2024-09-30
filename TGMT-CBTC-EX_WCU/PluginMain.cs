@@ -51,7 +51,9 @@ namespace TGMTAts.WCU {
             while (pointer < sectionManager.Sections.Count - 1) {
                 SignalPatch.Add(Extensions.GetExtension<ISignalPatchFactory>().Patch(nameof(SignalPatch), sectionManager.Sections[pointer] as Section,
                     source => (sectionManager.Sections[pointer].Location >= SelfTrainLocation && sectionManager.Sections[pointer].Location >= Config.TGMTTerrtoryStart
-                    && sectionManager.Sections[pointer].Location < Config.TGMTTerrtoryEnd) ? (OBCULevel == 2) ? (int)Config.CTCSignalIndex : source : source));
+                    && sectionManager.Sections[pointer].Location < Config.TGMTTerrtoryEnd)
+                    ? (OBCULevel == 2)
+                    ? (int)Config.CTCSignalIndex : source : source));
                 ++pointer;
             }
                 

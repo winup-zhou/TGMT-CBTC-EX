@@ -30,7 +30,7 @@ namespace TGMTAts.OBCU {
 
         private readonly IAtsSound atsSound0, atsSound1, atsSound2;
         private readonly IAtsPanelValue<int> atsPanel36, atsPanel40, atsPanel41;
-        public TGMTAts(PluginBuilder services) : base(services) { 
+        public TGMTAts(PluginBuilder services) : base(services) {
             Load();
             ;
             atsSound0 = Native.AtsSounds.Register(0);
@@ -143,17 +143,23 @@ namespace TGMTAts.OBCU {
                 nextLimit = targetCurve.NextLimit;
                 targetDistance = targetCurve.NextLimit.Location - location;
                 targetSpeed = targetCurve.NextLimit.Limit;
-                if (location > movementEndpoint.Location) {
+                if (signalMode == 1 && location > ITCNextSectionPos) {
                     // 如果已冲出移动授权终点，释放速度无效
                     if (releaseSpeed) Log("超出了移动授权终点, 释放速度无效");
+                    if (atsSound0.PlayState != PlayState.PlayingLoop) atsSound0.PlayLoop();
                     recommendSpeed = 0;
                     ebSpeed = 0;
                     releaseSpeed = false;
                 }
-                if (releaseSpeed) {
-                    ebSpeed = Math.Max(ebSpeed, Config.ReleaseSpeed);
-                    recommendSpeed = Math.Max(recommendSpeed, Config.ReleaseSpeed - Config.RecommendSpeedOffset);
+            }
+
+            if (releaseSpeed) {
+                if (location < ITCNextSectionPos && location > movementEndpoint.Location) {
+                    targetDistance = -10;
+                    targetSpeed = 0;
                 }
+                ebSpeed = Math.Max(ebSpeed, Config.ReleaseSpeed);
+                recommendSpeed = Math.Max(recommendSpeed, Config.ReleaseSpeed - Config.RecommendSpeedOffset);
             }
 
             // 显示速度、预选模式、驾驶模式、控制级别、车门模式
@@ -191,7 +197,7 @@ namespace TGMTAts.OBCU {
                 } else {
                     if (time - doorCloseTime >= 1000) {
                         panel_[29] = 0;
-                    } else if(StationManager.Arrived) {
+                    } else if (StationManager.Arrived) {
                         panel_[29] = 3;
                         targetDistance = 0;
                         targetSpeed = -10;
@@ -217,20 +223,6 @@ namespace TGMTAts.OBCU {
                 ebSpeed = recommendSpeed = 0;
             }
 
-            panel_[11] = distanceToPixel(targetDistance);
-            panel_[19] = (int)targetDistance;
-            panel_[16] = (int)(ebSpeed * speedMultiplier);
-            if (driveMode < 2) {
-                panel_[15] = (int)(recommendSpeed * speedMultiplier);
-            } else {
-                panel_[15] = -1;
-            }
-            distanceToColor(targetSpeed, targetDistance);
-            targetSpeed = Math.Min(targetSpeed, Config.MaxSpeed);
-            panel_[17] = (int)targetSpeed;
-            panel_[18] = (targetSpeed < 0) ? 1 : 0;
-            panel_[31] = 0;
-
             // 显示出发信息
             if (signalMode > 1 && state.Speed == 0) {
                 if (Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow
@@ -251,7 +243,21 @@ namespace TGMTAts.OBCU {
             } else {
                 panel_[32] = 0;
             }
-            
+
+            panel_[11] = distanceToPixel(targetDistance);
+            panel_[19] = (int)targetDistance;
+            panel_[16] = (int)(ebSpeed * speedMultiplier);
+            if (driveMode < 2) {
+                panel_[15] = (int)(recommendSpeed * speedMultiplier);
+            } else {
+                panel_[15] = -1;
+            }
+            distanceToColor(targetSpeed, targetDistance);
+            targetSpeed = Math.Min(targetSpeed, Config.MaxSpeed);
+            panel_[17] = (int)targetSpeed;
+            panel_[18] = (targetSpeed < 0) ? 1 : 0;
+            panel_[31] = 0;
+
 
             // 如果没有无线电，显示无线电故障
             panel_[23] = state.Speed == 0 ? 0 : 1;
@@ -261,7 +267,7 @@ namespace TGMTAts.OBCU {
             atsPanel40.Value = 0;
             Ato.UpdateAccel(state.Speed, recommendSpeed);
             if (signalMode > 0) {
-                if (handles.Power.Notch != 0 || handles.Brake.Notch != 0 || handles.Reverser.Position != ReverserPosition.F ) {
+                if (handles.Power.Notch != 0 || handles.Brake.Notch != 0 || handles.Reverser.Position != ReverserPosition.F) {
                     driveMode = 1;
                 }
                 if (recommendSpeed == 0 && state.Speed == 0) {
@@ -296,6 +302,7 @@ namespace TGMTAts.OBCU {
             if (ebSpeed > 0) {
                 // 有移动授权
                 if (state.Speed == 0 && handles.Power.Notch == 0) {
+                    if (atsSound0.PlayState != PlayState.Stop) atsSound0.Stop();
                     // 低于制动缓解速度
                     if (ebState > 0) {
                         if (location > movementEndpoint.Location) {
@@ -317,6 +324,7 @@ namespace TGMTAts.OBCU {
                     bCommand = Math.Max(bCommand, handles.Brake.EmergencyBrakeNotch);
                 } else {
                     if (ebState > 0) {
+                        if (atsSound0.PlayState != PlayState.PlayingLoop) atsSound0.PlayLoop();
                         // 刚刚触发紧急制动，继续制动
                         panel_[10] = 2;
                         panel_[29] = 2;
@@ -329,7 +337,7 @@ namespace TGMTAts.OBCU {
                         panel_[10] = 0;
                     }
                 }
-            } else if (signalMode == 1) {
+            } else if (signalMode == 1 && !doorOpen && panel_[29] != 3) {
                 // ITC下冲出移动授权终点。
                 if (state.Speed == 0) {
                     // 停稳后降级到RM模式。等待确认。
@@ -349,7 +357,8 @@ namespace TGMTAts.OBCU {
             if (state.Speed < 0.5 && handles.Power.Notch < 1 && handles.Brake.Notch < 1 && driveMode != 2) {
                 bCommand = Math.Min(Math.Max(bCommand, 1), handles.Brake.MaxServiceBrakeNotch);
             }
-            if (doorOpen) {
+
+            if (doorOpen || panel_[32] == 4) {
                 panel_[15] = -10 * speedMultiplier;
                 panel_[16] = 0;
                 if (handles.Brake.Notch < 4) bCommand = Math.Min(Math.Max(bCommand, 1), handles.Brake.MaxServiceBrakeNotch);
@@ -420,7 +429,7 @@ namespace TGMTAts.OBCU {
                     // 在车站范围内
                     if (Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow) {
                         // 在停车窗口内
-                        if (state.Speed < 1) {
+                        if (state.Speed < 5) {
                             panel_[26] = 2;
                         } else {
                             panel_[26] = 1;
