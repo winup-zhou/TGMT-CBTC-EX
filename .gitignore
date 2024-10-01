@@ -4,6 +4,7 @@
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
 # User-specific files
+*.csproj
 *.rsuser
 *.suo
 *.user
@@ -361,5 +362,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-
-*.csproj
+/TGMT-CBTC-EX/TGMT-CBTC-EX.csproj
+/TGMT-CBTC-EX_WCU/TGMT-CBTC-EX_WCU.csproj
+/TGMT-CBTC-EX/TGMT-CBTC-EX.csproj
+/TGMT-CBTC-EX/TickNew.cs
+/TGMT-CBTC-EX_WCU/TGMT-CBTC-EX_WCU.csproj
+/TGMT-CBTC-EX/TGMT-CBTC-EX.csproj
