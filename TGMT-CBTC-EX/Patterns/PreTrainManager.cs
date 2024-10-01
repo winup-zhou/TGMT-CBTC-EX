@@ -40,7 +40,7 @@ namespace TGMTAts.OBCU {
         }
 
         public static SpeedLimit GetEndpoint() {
-            if (Commands.Count == 0) return new SpeedLimit(0, TGMTAts.mapPlugin.MovementAuthority - Config.CTCSafetyDistance);
+            if (Commands.Count == 0 && TGMTAts.WCUAvailable) return new SpeedLimit(0, TGMTAts.mapPlugin.MovementAuthority - Config.CTCSafetyDistance);
             int pointer = 0;
             var time = TGMTAts.time;
             while (pointer < Commands.Count && Commands[pointer].Time < time) pointer++;

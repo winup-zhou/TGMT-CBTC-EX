@@ -8,27 +8,30 @@ using AtsEx.PluginHost.Plugins;
 using AtsEx.Extensions.PreTrainPatch;
 using System.IO;
 using System.Collections.Generic;
-
+using System.Windows.Forms;
 
 
 namespace TGMTAts.WCU {
     [PluginType(PluginType.MapPlugin)]
-    public class PluginMain : AssemblyPluginBase {
-        static PluginMain() {
+    public class TGMTAts : AssemblyPluginBase {
+        static TGMTAts() {
             Config.Load(Path.Combine(Config.PluginDir, "TGMT_WCUConfig.txt"));
         }
 
         public double MovementAuthority { get; set; } = 0;
         public int OBCULevel { get; set; } = 0;
         public double SelfTrainLocation { get; set; } = 0;
+        public double NextSectionLocation { get; set; } = 0;
+        public bool AtStation { get; set; } = false;
 
         private List<SignalPatch> SignalPatch = new List<SignalPatch>();
         private Train Train;
         private PreTrainPatch PreTrainPatch;
         private SectionManager sectionManager;
+        private bool TrainLoaded = false;
 
 
-        public PluginMain(PluginBuilder builder) : base(builder) {
+        public TGMTAts(PluginBuilder builder) : base(builder) {
             Plugins.AllPluginsLoaded += OnAllPluginsLoaded;
             BveHacker.ScenarioCreated += OnScenarioCreated;
         }
@@ -39,14 +42,16 @@ namespace TGMTAts.WCU {
 
 
         private void OnScenarioCreated(ScenarioCreatedEventArgs e) {
+            sectionManager = e.Scenario.SectionManager;
             if (!e.Scenario.Trains.ContainsKey(Config.PretrainName)) {
-                throw new BveFileLoadException(string.Format("キーが {0} の他列車が見つかりませんでした。", Config.PretrainName), "TGMT-CBTC-EX_WCU");
+                TrainLoaded = false;
+                MessageBox.Show(string.Format("找不到名为 {0} 的列车，请检查Map以及插件设置", Config.PretrainName), "TGMT-CBTC-EX_WCU");
+            } else {
+                TrainLoaded = true;
+                Train = e.Scenario.Trains[Config.PretrainName];
+                PreTrainPatch = Extensions.GetExtension<IPreTrainPatchFactory>().Patch(nameof(PreTrainPatch), sectionManager, new PreTrainLocationConverter(Train, sectionManager));
             }
 
-            Train = e.Scenario.Trains[Config.PretrainName];
-
-            sectionManager = e.Scenario.SectionManager;
-            PreTrainPatch = Extensions.GetExtension<IPreTrainPatchFactory>().Patch(nameof(PreTrainPatch), sectionManager, new PreTrainLocationConverter(Train, sectionManager));
             int pointer = 0;
             while (pointer < sectionManager.Sections.Count - 1) {
                 SignalPatch.Add(Extensions.GetExtension<ISignalPatchFactory>().Patch(nameof(SignalPatch), sectionManager.Sections[pointer] as Section,
@@ -56,7 +61,7 @@ namespace TGMTAts.WCU {
                     ? (int)Config.CTCSignalIndex : source : source));
                 ++pointer;
             }
-                
+
         }
 
         public override void Dispose() {
@@ -64,6 +69,11 @@ namespace TGMTAts.WCU {
             PreTrainPatch?.Dispose();
             Plugins.AllPluginsLoaded -= OnAllPluginsLoaded;
             BveHacker.ScenarioCreated -= OnScenarioCreated;
+            TrainLoaded = false;
+            MovementAuthority = 0;
+            OBCULevel = 0;
+            SelfTrainLocation = 0;
+            NextSectionLocation = 0;
         }
 
         private class PreTrainLocationConverter : IPreTrainLocationConverter {
@@ -81,7 +91,17 @@ namespace TGMTAts.WCU {
 
         public override TickResult Tick(TimeSpan elapsed) {
 
-            MovementAuthority = Train.Location;
+            int pointer = 0;
+            while (sectionManager.Sections[pointer].Location < SelfTrainLocation)
+                pointer++;
+            if (pointer >= sectionManager.Sections.Count)
+                pointer = sectionManager.Sections.Count - 1;
+
+            var CurrentSection = sectionManager.Sections[pointer == 0 ? 0 : pointer - 1] as Section;
+            var NextSection = sectionManager.Sections[pointer] as Section;
+
+            NextSectionLocation = NextSection.Location;
+            if (TrainLoaded) MovementAuthority = Train.Location;
 
             return new MapPluginTickResult();
         }

@@ -14,7 +14,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-using MapPlugin = TGMTAts.WCU.PluginMain;
+using MapPlugin = TGMTAts.WCU.TGMTAts;
 
 namespace TGMTAts.OBCU {
     [PluginType(PluginType.VehiclePlugin)]
@@ -60,7 +60,13 @@ namespace TGMTAts.OBCU {
         }
 
         private void OnAllPluginsLoaded(object sender, EventArgs e) {
-            mapPlugin = Plugins[PluginType.MapPlugin]["TGMT_WCU_Plugin"] as MapPlugin;
+            try {
+                mapPlugin = Plugins[PluginType.MapPlugin]["TGMT_WCU_Plugin"] as MapPlugin;
+                WCUAvailable = true;
+            } catch (Exception ex) {
+                WCUAvailable = false;
+                MessageBox.Show("找不到WCU插件，OBCU将保持在IXLC级别工作", "TGMT-CBTC-EX_OBCU");
+            }
         }
 
         public override TickResult Tick(TimeSpan elapsed) {
@@ -106,9 +112,9 @@ namespace TGMTAts.OBCU {
                     recommendCurve = CalculatedLimit.Calculate(location,
                         Config.RecommendDeceleration, 0, StationManager.RecommendCurve(), movementEndpoint, trackLimit);
                     // 释放速度
-                    if (movementEndpoint.Location - location < Config.ReleaseSpeedDistance
-                        && movementEndpoint.Location > location
-                        && state.Speed < Config.ReleaseSpeed && !releaseSpeed) {
+                    if (ITCNextSectionPos - location < Config.ReleaseSpeedDistance
+                        && ITCNextSectionPos > location
+                        && state.Speed < Config.ReleaseSpeed && !releaseSpeed && ITCNextSectionPos != -114514) {
                         ackMessage = 2;
                     }
                     break;
@@ -143,21 +149,28 @@ namespace TGMTAts.OBCU {
                 nextLimit = targetCurve.NextLimit;
                 targetDistance = targetCurve.NextLimit.Location - location;
                 targetSpeed = targetCurve.NextLimit.Limit;
-                if (signalMode == 1 && location > ITCNextSectionPos) {
-                    // 如果已冲出移动授权终点，释放速度无效
-                    if (releaseSpeed) Log("超出了移动授权终点, 释放速度无效");
-                    if (atsSound0.PlayState != PlayState.PlayingLoop) atsSound0.PlayLoop();
-                    recommendSpeed = 0;
-                    ebSpeed = 0;
-                    releaseSpeed = false;
+                if (signalMode == 1) {
+                    if (ITCNextSectionPos == -114514) {
+                        recommendSpeed = 0;
+                        ebSpeed = 0;
+                        ackMessage = 6;
+                    } else if (location > ITCNextSectionPos) {
+                        // 如果已冲出移动授权终点，释放速度无效
+                        if (releaseSpeed) Log("超出了移动授权终点, 释放速度无效");
+                        if (atsSound0.PlayState != PlayState.PlayingLoop) atsSound0.PlayLoop();
+                        recommendSpeed = 0;
+                        ebSpeed = 0;
+                        releaseSpeed = false;
+                    }
+                    if (location < ITCNextSectionPos && location > movementEndpoint.Location) {
+                        targetDistance = -10;
+                        targetSpeed = 0;
+                    }
                 }
+
             }
 
             if (releaseSpeed) {
-                if (location < ITCNextSectionPos && location > movementEndpoint.Location) {
-                    targetDistance = -10;
-                    targetSpeed = 0;
-                }
                 ebSpeed = Math.Max(ebSpeed, Config.ReleaseSpeed);
                 recommendSpeed = Math.Max(recommendSpeed, Config.ReleaseSpeed - Config.RecommendSpeedOffset);
             }
@@ -168,8 +181,10 @@ namespace TGMTAts.OBCU {
             panel_[24] = driveMode;
             panel_[25] = signalMode;
             panel_[28] = (driveMode > 0) ? (driveMode > 1 ? doorMode : 1) : 0;
-            mapPlugin.OBCULevel = signalMode;
-            mapPlugin.SelfTrainLocation = state.Location;
+            if (WCUAvailable) {
+                mapPlugin.OBCULevel = signalMode;
+                mapPlugin.SelfTrainLocation = state.Location;
+            } else RadioAvailable = false;
 
             // 显示临时预选模式
             if (state.Speed != 0 || time > selectModeStartTime + Config.ModeSelectTimeout * 1000) {
@@ -184,7 +199,7 @@ namespace TGMTAts.OBCU {
 
             panel_[29] = 0;
             //PSD信息
-            if (signalMode >= 1 && deviceCapability == 2 && state.Speed == 0) {
+            if (signalMode >= 1 && RadioAvailable && state.Speed == 0) {
                 if (doorOpen) {
                     if (time - doorOpenTime >= 1000) {
                         panel_[29] = 3;
@@ -261,7 +276,7 @@ namespace TGMTAts.OBCU {
 
             // 如果没有无线电，显示无线电故障
             panel_[23] = state.Speed == 0 ? 0 : 1;
-            panel_[30] = deviceCapability != 2 ? 1 : 0;
+            panel_[30] = !RadioAvailable ? 1 : 0;
 
             // ATO
             atsPanel40.Value = 0;
@@ -305,7 +320,7 @@ namespace TGMTAts.OBCU {
                     if (atsSound0.PlayState != PlayState.Stop) atsSound0.Stop();
                     // 低于制动缓解速度
                     if (ebState > 0) {
-                        if (location > movementEndpoint.Location) {
+                        if (signalMode == 2 && location > movementEndpoint.Location) {
                             // 冲出移动授权终点，要求RM
                             ackMessage = 6;
                         } else {
@@ -339,9 +354,10 @@ namespace TGMTAts.OBCU {
                 }
             } else if (signalMode == 1 && !doorOpen && panel_[29] != 3) {
                 // ITC下冲出移动授权终点。
-                if (state.Speed == 0) {
+                if (state.Speed == 0 && location > ITCNextSectionPos) {
                     // 停稳后降级到RM模式。等待确认。
                     ackMessage = 6;
+                    Localized = false;
                 }
                 ebState = 1;
                 // 显示紧急制动、目标距离0、速度0
@@ -382,6 +398,11 @@ namespace TGMTAts.OBCU {
 
             // 显示释放速度、确认消息
             if (releaseSpeed) panel_[31] = 3;
+            //定位策略
+            if (!Localized) {
+                panel_[31] = 2;
+                if (BaliseCount >= 2) { Localized = true; BaliseCount = 0; }
+            }
             if (ackMessage > 0) {
                 panel_[35] = ackMessage;
                 panel_[36] = atsPanel36.Value = ((state.Time.TotalMilliseconds / 1000) % 0.5 < 0.25) ? 1 : 0;

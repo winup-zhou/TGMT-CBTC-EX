@@ -29,8 +29,10 @@ namespace TGMTAts.OBCU {
         public static int signalMode = 2;
         // 1: MM; 2: AM; 3: AA
         public static int doorMode = 1;
-        // 0: 没有CTC,ITC; 1: 没有CTC; 2: 正常
-        public static int deviceCapability = 2;
+        // 无线电
+        public static bool RadioAvailable = false;
+        // WCU可用性
+        public static bool WCUAvailable = false;
 
         // 暂时的预选速度，-1表示没有在预选
         public static int selectingMode = -1;
@@ -42,10 +44,11 @@ namespace TGMTAts.OBCU {
 
         public static int TrainNumber = 0;
         public static int DestinationNumber = 0;
-        public static double ITCNextSectionPos = 0;
+        public static double ITCNextSectionPos = -114514;
 
-        public static int VBCount = 0;
-        public static int FBCount = 0;
+        //定位策略
+        public static int BaliseCount = 0;
+        public static bool Localized = false;
 
         public static double reverseStartLocation = Config.LessInf;
 
@@ -91,15 +94,20 @@ namespace TGMTAts.OBCU {
         }
 
         static void FixIncompatibleModes() {
-            if (selectedMode == 0) signalMode = 0; // 预选了IXL
-            if (selectedMode == 1 && signalMode > 1) signalMode = 1; // 预选了ITC
-            if (selectedMode == 3 && signalMode > 1) signalMode = 1; // 预选了ITC
+            if (BaliseCount >= 2) { Localized = true; BaliseCount = 0; }
+            if (WCUAvailable) {
+                if (selectedMode == 0 || !Localized) signalMode = 0; // 预选了IXL
+                if (signalMode == 0 && driveMode > 0) driveMode = 0; // 没信号就得是RM
+                if (Localized) {
+                    if (selectedMode == 1 && signalMode > 1) signalMode = 1; // 预选了ITC
+                    if (selectedMode == 3 && signalMode > 1) signalMode = 1; // 预选了ITC
+                    if (!RadioAvailable && signalMode > 1) signalMode = 1; // 没有无线电信号
+                    if (signalMode > 0 && driveMode == 0) driveMode = 1; // 有信号就至少是SM
+                }
+            } else {
+                signalMode = 0;
+            }
 
-            if (deviceCapability == 0) signalMode = 0; // 没有TGMT设备
-            if (deviceCapability == 1 && signalMode > 1) signalMode = 1; // 没有无线电信号
-
-            if (signalMode > 0 && driveMode == 0) driveMode = 1; // 有信号就至少是SM
-            if (signalMode == 0 && driveMode > 0) driveMode = 0; // 没信号就得是RM
         }
 
         public static int ConvertTime(int human) {
@@ -117,6 +125,34 @@ namespace TGMTAts.OBCU {
             TGMTPainter.Dispose();
             hHMITex.Dispose();
             hTDTTex.Dispose();
+
+            ITCNextSectionPos = -114514;
+            movementEndpoint = SpeedLimit.inf;
+            nextLimit = null;
+            selectingMode = -1;
+            selectModeStartTime = 0;
+            pluginReady = false;
+            reverseStartLocation = Config.LessInf;
+            releaseSpeed = false;
+            ebState = 0;
+            ackMessage = 0;
+
+            DestinationNumber = TrainNumber = 0;
+
+            Ato.ResetCache();
+            PreTrainManager.ResetCache();
+
+            RadioAvailable = false;
+            WCUAvailable = false;
+            doorMode = 1;
+            signalMode = 2;
+            driveMode = 1;
+            selectedMode = 4;
+            debugMessages.Clear();
+            trackLimit = new TrackLimit();
+
+            BaliseCount = 0;
+            Localized = false;
 
             Native.NativeKeys.AtsKeys[NativeAtsKeyName.A1].Pressed -= OnA1Pressed;
             Native.NativeKeys.AtsKeys[NativeAtsKeyName.B1].Pressed -= OnB1Pressed;
