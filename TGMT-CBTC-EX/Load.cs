@@ -43,8 +43,8 @@ namespace TGMTAts.OBCU {
         public static bool releaseSpeed = false;
         public static int ackMessage = 0;
 
-        public static int TrainNumber = 0;
-        public static int DestinationNumber = 0;
+        public static int TrainNumber = -114514;
+        public static int DestinationNumber = -114514;
         public static double ITCNextSectionPos = -114514;
 
         //定位策略
@@ -142,7 +142,7 @@ namespace TGMTAts.OBCU {
             ebState = 0;
             ackMessage = 0;
 
-            DestinationNumber = TrainNumber = 0;
+            DestinationNumber = TrainNumber = -114514;
 
             Ato.ResetCache();
             PreTrainManager.ResetCache();

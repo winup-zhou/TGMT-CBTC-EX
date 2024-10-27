@@ -87,11 +87,25 @@ namespace TGMTAts.OBCU {
             pReverser = handles.Reverser.Position;
 
             int pCommand = 0, bCommand = 0;
-            ReverserPosition rCommand = 0;
+            ReverserPosition rCommand = handles.Reverser.Position;
 
             double ebSpeed = 0, recommendSpeed = 0, targetSpeed = 0, targetDistance = 0;
             trackLimit.Update(location);
             StationManager.Update(state, doorOpen);
+
+            //WCU通信
+            if (WCUAvailable) {
+                //to WCU
+                mapPlugin.OBCULevel = signalMode;
+                mapPlugin.SelfTrainLocation = state.Location;
+                mapPlugin.AtStation = Math.Abs(StationManager.NextStation.StopPosition - location) < Config.StationStartDistance;
+                mapPlugin.CurrentTime = state.Time;
+                mapPlugin.SelfTrainSpeed = state.Speed;
+                mapPlugin.StopAtPos = Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow;
+                mapPlugin.RadioAvailable = RadioAvailable;
+                //from WCU
+                StationManager.SetStation(mapPlugin.StationLocation, mapPlugin.NextStaPass, mapPlugin.DepTime);
+            } else RadioAvailable = false;
 
             //CTC升级策略
             if (WCUAvailable && !RadioFailed) {
@@ -200,17 +214,6 @@ namespace TGMTAts.OBCU {
             panel_[25] = signalMode;
             panel_[28] = (driveMode > 0) ? (driveMode > 1 ? doorMode : 1) : 0;
 
-            //WCU通信
-            if (WCUAvailable) {
-                mapPlugin.OBCULevel = signalMode;
-                mapPlugin.SelfTrainLocation = state.Location;
-                mapPlugin.AtStation = Math.Abs(StationManager.NextStation.StopPosition - location) < Config.StationStartDistance;
-                mapPlugin.CurrentTime = state.Time;
-                mapPlugin.SelfTrainSpeed = state.Speed;
-                mapPlugin.StopAtPos = Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow;
-                mapPlugin.RadioAvailable = RadioAvailable;
-            } else RadioAvailable = false;
-
             // 显示临时预选模式
             if (state.Speed != 0 || time > selectModeStartTime + Config.ModeSelectTimeout * 1000) {
                 selectingMode = -1;
@@ -249,14 +252,6 @@ namespace TGMTAts.OBCU {
             }
 
             // 显示目标速度、建议速度、干预速度
-            if (signalMode > 1 && state.Speed == 0 &&
-                Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow
-                && time < StationManager.NextStation.RouteOpenTime) {
-                targetDistance = 0;
-                targetSpeed = -10;
-                ebSpeed = recommendSpeed = 0;
-            }
-
             if (doorOpen) {
                 targetDistance = 0;
                 targetSpeed = -10;
@@ -265,16 +260,17 @@ namespace TGMTAts.OBCU {
 
             // 显示出发信息
             if (signalMode > 1 && state.Speed == 0 && WCUAvailable) {
-                if (Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow
-                    && time > StationManager.NextStation.DepartureTime - Config.DepartRequestTime * 1000 && !doorOpen && StationManager.Arrived
-                    && time >= StationManager.NextStation.RouteOpenTime && panel_[29] != 3) {
+                if (!mapPlugin.TrainHold && state.Time.TotalMilliseconds > StationManager.NextStation.DepartureTime - 5000 && panel_[29] != 3 &&
+                    Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow) {
                     panel_[32] = 2;
-                } else if (Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow
-                    && time - doorOpenTime >= Config.CloseRequestShowTime * 1000 && doorOpen && time > StationManager.NextStation.DepartureTime - (Config.DepartRequestTime + 20) * 1000
-                    && StationManager.Arrived && time >= StationManager.NextStation.RouteOpenTime) {
+                } else if (!mapPlugin.TrainHold && state.Time.TotalMilliseconds > StationManager.NextStation.DepartureTime - Config.DepartRequestTime * 1000 &&
+                    Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow) {
                     panel_[32] = 1;
                     atsSound1.Play();
                 } else if (mapPlugin.TrainHold && !StationManager.NextStation.Pass) {
+                    targetDistance = 0;
+                    targetSpeed = -10;
+                    ebSpeed = recommendSpeed = 0;
                     panel_[32] = 4;
                 } else {
                     panel_[32] = 0;
@@ -338,14 +334,15 @@ namespace TGMTAts.OBCU {
             }
 
             // 防溜、车门零速保护
-            if (state.Speed < 0.5 && handles.Power.Notch < 1 && handles.Brake.Notch < 1 && driveMode != 2) {
-                bCommand = Math.Min(Math.Max(bCommand, 1), handles.Brake.MaxServiceBrakeNotch);
-            }
+            //if (state.Speed < 0.5 && handles.Power.Notch < 1 && handles.Brake.Notch < 1 && driveMode != 2) {
+            //    bCommand = Math.Min(Math.Max(bCommand, 1), handles.Brake.MaxServiceBrakeNotch);
+            //}
 
             if (doorOpen || panel_[32] == 4) {
                 panel_[15] = -10 * speedMultiplier;
                 panel_[16] = 0;
-                if (handles.Brake.Notch < 4) bCommand = Math.Min(Math.Max(bCommand, 1), handles.Brake.MaxServiceBrakeNotch);
+                //if (handles.Brake.Notch < 4) bCommand = Math.Min(Math.Max(bCommand, 1), handles.Brake.MaxServiceBrakeNotch);
+                rCommand = ReverserPosition.N;
             }
 
             // 后退监督: 每1m一次紧制 (先这么做着, 有些地区似乎是先1m之后每次0.5m)
@@ -422,6 +419,14 @@ namespace TGMTAts.OBCU {
                 panel_[10] = 2;
                 panel_[29] = 2;
                 bCommand = Math.Max(bCommand, handles.Brake.EmergencyBrakeNotch);
+            } else if (ebSpeed == 0) {
+                if (state.Speed > 0) {
+                    ebState = 1;
+                    panel_[10] = 2;
+                    panel_[29] = 2;
+                    bCommand = Math.Max(bCommand, handles.Brake.EmergencyBrakeNotch);
+                    if (atsSound0.PlayState != PlayState.PlayingLoop) atsSound0.PlayLoop();
+                }
             }
 
 
@@ -549,7 +554,7 @@ namespace TGMTAts.OBCU {
 
             NotchCommandBase powerCommand = handles.Power.GetCommandToSetNotchTo(Math.Max(pCommand, handles.Power.Notch));
             NotchCommandBase brakeCommand = handles.Brake.GetCommandToSetNotchTo(Math.Max(bCommand, handles.Brake.Notch));
-            ReverserPositionCommandBase reverserCommand = ReverserPositionCommandBase.Continue;
+            ReverserPositionCommandBase reverserCommand = new ReverserPositionCommandBase.SetPositionCommand(rCommand);
             ConstantSpeedCommand? constantSpeedCommand = ConstantSpeedCommand.Continue;
 
             tickResult.HandleCommandSet = new HandleCommandSet(powerCommand, brakeCommand, reverserCommand, constantSpeedCommand);

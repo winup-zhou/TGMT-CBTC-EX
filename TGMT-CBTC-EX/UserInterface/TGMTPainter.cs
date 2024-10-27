@@ -38,7 +38,7 @@ namespace TGMTAts.OBCU {
             numn0 = new Bitmap(Path.Combine(imgDir, "num-0.png"));
             colon = new Bitmap(Path.Combine(imgDir, "colon.png"));
 
-            
+
             tdtbackoff = new Bitmap(Path.Combine(imgDir, "tdt_back_off.png"));
             tdtbackred = new Bitmap(Path.Combine(imgDir, "tdt_back_red.png"));
             tdtbackgreen = new Bitmap(Path.Combine(imgDir, "tdt_back_green.png"));
@@ -50,7 +50,7 @@ namespace TGMTAts.OBCU {
             hHMI.Dispose();
             hTDT.Dispose();
         }
-        
+
         public static GDIHelper PaintHMI(AtsEx.PluginHost.Native.VehicleState state) {
             hHMI.BeginGDI();
             hHMI.DrawImage(hmi, 0, 0);
@@ -84,16 +84,20 @@ namespace TGMTAts.OBCU {
             }
             hHMI.DrawImage(num0, 289, 212, D((int)Math.Abs(Math.Ceiling(state.Speed)), 0) * 18, 18);
             hHMI.DrawImage(numn0, 275, 212, D((int)Math.Abs(Math.Ceiling(state.Speed)), 1) * 18, 18);
+            if (TGMTAts.TrainNumber != -114514) {
+                hHMI.DrawImage(num0, 562, 31, D(TGMTAts.TrainNumber, 0) * 18, 18);
+                hHMI.DrawImage(num0, 548, 31, D(TGMTAts.TrainNumber, 1) * 18, 18);
+                hHMI.DrawImage(num0, 534, 31, D(TGMTAts.TrainNumber, 2) * 18, 18);
+                hHMI.DrawImage(num0, 520, 31, D(TGMTAts.TrainNumber, 3) * 18, 18);
+                hHMI.DrawImage(num0, 506, 31, D(TGMTAts.TrainNumber, 4) * 18, 18);
+            }
 
-            hHMI.DrawImage(num0, 562, 31, D(TGMTAts.TrainNumber, 0) * 18, 18);
-            hHMI.DrawImage(num0, 548, 31, D(TGMTAts.TrainNumber, 1) * 18, 18);
-            hHMI.DrawImage(num0, 534, 31, D(TGMTAts.TrainNumber, 2) * 18, 18);
-            hHMI.DrawImage(num0, 520, 31, D(TGMTAts.TrainNumber, 3) * 18, 18);
-            hHMI.DrawImage(num0, 506, 31, D(TGMTAts.TrainNumber, 4) * 18, 18);
+            if (TGMTAts.DestinationNumber != -114514) {
+                hHMI.DrawImage(num0, 648, 31, D(TGMTAts.DestinationNumber, 0) * 18, 18);
+                hHMI.DrawImage(num0, 634, 31, D(TGMTAts.DestinationNumber, 1) * 18, 18);
+                hHMI.DrawImage(num0, 620, 31, D(TGMTAts.DestinationNumber, 2) * 18, 18);
+            }
 
-            hHMI.DrawImage(num0, 648, 31, D(TGMTAts.DestinationNumber, 0) * 18, 18);
-            hHMI.DrawImage(num0, 634, 31, D(TGMTAts.DestinationNumber, 1) * 18, 18);
-            hHMI.DrawImage(num0, 620, 31, D(TGMTAts.DestinationNumber, 2) * 18, 18);
 
             hHMI.DrawImage(num0, 186, 552, D(hrs, 1) * 18, 18);
             hHMI.DrawImage(num0, 200, 552, D(hrs, 0) * 18, 18);
@@ -126,6 +130,13 @@ namespace TGMTAts.OBCU {
                 hHMI.Graphics.FillPolygon(Brushes.Red, new Point[] {
                     Poc(288, 221, 165, 0, tLimit), Poc(288, 221, 185, -11, tLimit), Poc(288, 221, 185, 11, tLimit)
                 });
+            }
+
+            if (TGMTAts.TrainNumber == -114514 || !TGMTAts.RadioAvailable) {
+                hHMI.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(3, 17, 34)), new Rectangle(484, 29, 95, 22));
+            }
+            if (TGMTAts.DestinationNumber == -114514 || TGMTAts.signalMode != 2 || !TGMTAts.RadioAvailable) {
+                hHMI.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(3, 17, 34)), new Rectangle(600, 29, 65, 22));
             }
             return hHMI;
         }

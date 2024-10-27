@@ -37,6 +37,26 @@ namespace TGMTAts.WCU {
                 return isTrainHold;
             }
         }
+        private bool StaPass = false;
+        private double NextStaLocation = 0;
+        private TimeSpan NextStaDepTime = TimeSpan.Zero;
+
+        public bool NextStaPass {
+            get {
+                return StaPass;
+            }
+        }
+        public double StationLocation {
+            get {
+                return NextStaLocation;
+            }
+        }
+        public TimeSpan DepTime {
+            get {
+                return NextStaDepTime;
+            }
+        }
+
 
         //OBCU -> WCU
         public int OBCULevel { get; set; } = 0;
@@ -135,6 +155,11 @@ namespace TGMTAts.WCU {
                     while (BveHacker.Scenario.Route.Stations[pointer_].Location < SelfTrainLocation - 25)
                         pointer_++;
                     NextSta = BveHacker.Scenario.Route.Stations[pointer_] as Station;
+                    StaPass = NextSta.Pass;
+                    NextStaLocation = NextSta.Location;
+                    if (NextSta.DepertureTime != TimeSpan.Zero) {
+                        NextStaDepTime = NextSta.DepertureTime;
+                    } else NextStaDepTime = NextSta.DefaultTime + new TimeSpan(0, 0, 30);
                 }
                 if (CurrentTime.TotalMilliseconds < (NextSta.DepertureTimeMilliseconds - NextSta.StoppageTimeMilliseconds) && NextSta.SignalFlag == true)
                     isTrainHold = true;
@@ -145,8 +170,12 @@ namespace TGMTAts.WCU {
                     pointer_++;
                 NextSta = BveHacker.Scenario.Route.Stations[pointer_] as Station;
                 isTrainHold = false;
+                StaPass = NextSta.Pass;
+                NextStaLocation = NextSta.Location;
+                if (NextSta.DepertureTime != TimeSpan.Zero) {
+                    NextStaDepTime = NextSta.DepertureTime;
+                } else NextStaDepTime = NextSta.DefaultTime + new TimeSpan(0, 0, 30);
             }
-
 
             nextBlockLocation = NextSection.Location;
             if (TrainLoaded) MA = Train.Location;

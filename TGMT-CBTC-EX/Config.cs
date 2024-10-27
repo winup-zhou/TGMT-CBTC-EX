@@ -30,7 +30,7 @@ namespace TGMTAts.OBCU {
         public static double StationEndDistance = 5;
         public static double StationMotionEndpoint = 3;
         public static double CTCSafetyDistance = 30;
-        public static double CloseRequestShowTime = 1000;
+        public static double CloseRequestShowTime = 10;
         public static double ITCSafetyDistance = 20;
 
         public static double TrainLength = 0;
