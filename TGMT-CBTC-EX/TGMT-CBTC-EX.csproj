@@ -92,14 +92,8 @@
       <Version>1.0.0</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\TGMT-CBTC-EX_WCU\TGMT-CBTC-EX_WCU.csproj">
-      <Project>{ab7ee309-f15f-4ad4-a658-d0dd210627ce}</Project>
-      <Name>TGMT-CBTC-EX_WCU</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>COPY $(TargetPath) D:\Scenarios\CRT4\AtsEX\AtsEXPlugins\$(TargetFileName)</PostBuildEvent>
+    <PostBuildEvent></PostBuildEvent>
   </PropertyGroup>
 </Project>
