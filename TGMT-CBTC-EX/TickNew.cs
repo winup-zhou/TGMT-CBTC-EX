@@ -14,7 +14,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-using MapPlugin = TGMTAts.WCU.PluginMain;
+using MapPlugin = TGMTAts.WCU.TGMTAts;
 
 namespace TGMTAts.OBCU {
     [PluginType(PluginType.VehiclePlugin)]
@@ -60,7 +60,13 @@ namespace TGMTAts.OBCU {
         }
 
         private void OnAllPluginsLoaded(object sender, EventArgs e) {
-            mapPlugin = Plugins[PluginType.MapPlugin]["TGMT_WCU_Plugin"] as MapPlugin;
+            try {
+                mapPlugin = Plugins[PluginType.MapPlugin]["TGMT_WCU_Plugin"] as MapPlugin;
+                WCUAvailable = true;
+            } catch (Exception ex) {
+                WCUAvailable = false;
+                MessageBox.Show("找不到WCU插件，OBCU将保持在IXLC级别工作", "TGMT-CBTC-EX_OBCU");
+            }
         }
 
         public override TickResult Tick(TimeSpan elapsed) {
@@ -81,11 +87,34 @@ namespace TGMTAts.OBCU {
             pReverser = handles.Reverser.Position;
 
             int pCommand = 0, bCommand = 0;
-            ReverserPosition rCommand = 0;
+            ReverserPosition rCommand = handles.Reverser.Position;
 
             double ebSpeed = 0, recommendSpeed = 0, targetSpeed = 0, targetDistance = 0;
             trackLimit.Update(location);
             StationManager.Update(state, doorOpen);
+
+            //WCU通信
+            if (WCUAvailable) {
+                //to WCU
+                mapPlugin.OBCULevel = signalMode;
+                mapPlugin.SelfTrainLocation = state.Location;
+                mapPlugin.AtStation = Math.Abs(StationManager.NextStation.StopPosition - location) < Config.StationStartDistance;
+                mapPlugin.CurrentTime = state.Time;
+                mapPlugin.SelfTrainSpeed = state.Speed;
+                mapPlugin.StopAtPos = Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow;
+                mapPlugin.RadioAvailable = RadioAvailable;
+                //from WCU
+                StationManager.SetStation(mapPlugin.StationLocation, mapPlugin.NextStaPass, mapPlugin.DepTime);
+            } else RadioAvailable = false;
+
+            //CTC升级策略
+            if (WCUAvailable && !RadioFailed) {
+                if (state.Location > mapPlugin.NextSectionLocation - 5) {
+                    if (signalMode < 2 && RadioAvailable) CTCUpgrade();
+                } else if (Math.Abs(StationManager.NextStation.StopPosition - location) < Config.StationStartDistance) {
+                    if (RadioAvailable && (selectedMode == 2 || selectedMode == 4) && signalMode < 2) CTCUpgrade();
+                }
+            }
 
             CalculatedLimit maximumCurve = null, targetCurve = null, recommendCurve = null;
             switch (signalMode) {
@@ -106,26 +135,25 @@ namespace TGMTAts.OBCU {
                     recommendCurve = CalculatedLimit.Calculate(location,
                         Config.RecommendDeceleration, 0, StationManager.RecommendCurve(), movementEndpoint, trackLimit);
                     // 释放速度
-                    if (movementEndpoint.Location - location < Config.ReleaseSpeedDistance
-                        && movementEndpoint.Location > location
-                        && state.Speed < Config.ReleaseSpeed && !releaseSpeed) {
+                    if (ITCNextSectionPos - location < Config.ReleaseSpeedDistance
+                        && ITCNextSectionPos > location
+                        && state.Speed < Config.ReleaseSpeed && !releaseSpeed && ITCNextSectionPos != -114514) {
                         ackMessage = 2;
                     }
                     break;
                 case 2:
                     // CTC
                     releaseSpeed = false;
-                    movementEndpoint = StationManager.CTCEndpoint();
                     if (selectedMode > 0 && driveMode == 0) driveMode = 1;
                     maximumCurve = CalculatedLimit.Calculate(location,
-                        Config.EbPatternDeceleration, Config.RecommendSpeedOffset, movementEndpoint,
+                        Config.EbPatternDeceleration, Config.RecommendSpeedOffset, StationManager.CTCEndpoint(),
                         PreTrainManager.GetEndpoint(), trackLimit);
                     targetCurve = CalculatedLimit.Calculate(location,
-                        Config.EbPatternDeceleration, 0, movementEndpoint,
+                        Config.EbPatternDeceleration, 0, StationManager.CTCEndpoint(),
                         PreTrainManager.GetEndpoint(), trackLimit);
                     recommendCurve = CalculatedLimit.Calculate(location,
                         Config.RecommendDeceleration, 0, StationManager.RecommendCurve(),
-                        PreTrainManager.GetEndpoint(), movementEndpoint, trackLimit);
+                        PreTrainManager.GetEndpoint(), StationManager.CTCEndpoint(), trackLimit);
                     break;
                 default:
                     // fallback
@@ -143,21 +171,38 @@ namespace TGMTAts.OBCU {
                 nextLimit = targetCurve.NextLimit;
                 targetDistance = targetCurve.NextLimit.Location - location;
                 targetSpeed = targetCurve.NextLimit.Limit;
-                if (signalMode == 1 && location > ITCNextSectionPos) {
-                    // 如果已冲出移动授权终点，释放速度无效
-                    if (releaseSpeed) Log("超出了移动授权终点, 释放速度无效");
-                    if (atsSound0.PlayState != PlayState.PlayingLoop) atsSound0.PlayLoop();
-                    recommendSpeed = 0;
-                    ebSpeed = 0;
-                    releaseSpeed = false;
+                if (signalMode == 1) {
+                    if (ITCNextSectionPos == -114514) {
+                        recommendSpeed = 0;
+                        ebSpeed = 0;
+                        if (state.Speed == 0) ackMessage = 6;
+                    } else if (location > ITCNextSectionPos) {
+                        // 如果已冲出移动授权终点，释放速度无效
+                        if (releaseSpeed) Log("超出了移动授权终点, 释放速度无效");
+                        if (atsSound0.PlayState != PlayState.PlayingLoop) atsSound0.PlayLoop();
+                        recommendSpeed = 0;
+                        ebSpeed = 0;
+                        releaseSpeed = false;
+                    }
+                    if (location < ITCNextSectionPos && location > movementEndpoint.Location) {
+                        targetDistance = -10;
+                        targetSpeed = 0;
+                    }
                 }
             }
 
-            if (releaseSpeed) {
-                if (location < ITCNextSectionPos && location > movementEndpoint.Location) {
+            if (RadioFailed) {
+                if (signalMode == 2) {
                     targetDistance = -10;
-                    targetSpeed = 0;
-                }
+                    targetSpeed = -10;
+                    recommendSpeed = 0;
+                    ebSpeed = 0;
+                    if (atsSound0.PlayState != PlayState.PlayingLoop) atsSound0.PlayLoop();
+                    if (state.Speed == 0) ackMessage = 6;
+                } else RadioFailed = false;
+            }
+
+            if (releaseSpeed) {
                 ebSpeed = Math.Max(ebSpeed, Config.ReleaseSpeed);
                 recommendSpeed = Math.Max(recommendSpeed, Config.ReleaseSpeed - Config.RecommendSpeedOffset);
             }
@@ -168,8 +213,6 @@ namespace TGMTAts.OBCU {
             panel_[24] = driveMode;
             panel_[25] = signalMode;
             panel_[28] = (driveMode > 0) ? (driveMode > 1 ? doorMode : 1) : 0;
-            mapPlugin.OBCULevel = signalMode;
-            mapPlugin.SelfTrainLocation = state.Location;
 
             // 显示临时预选模式
             if (state.Speed != 0 || time > selectModeStartTime + Config.ModeSelectTimeout * 1000) {
@@ -184,7 +227,7 @@ namespace TGMTAts.OBCU {
 
             panel_[29] = 0;
             //PSD信息
-            if (signalMode >= 1 && deviceCapability == 2 && state.Speed == 0) {
+            if (signalMode >= 1 && RadioAvailable && state.Speed == 0) {
                 if (doorOpen) {
                     if (time - doorOpenTime >= 1000) {
                         panel_[29] = 3;
@@ -209,14 +252,6 @@ namespace TGMTAts.OBCU {
             }
 
             // 显示目标速度、建议速度、干预速度
-            if (signalMode > 1 && state.Speed == 0 &&
-                Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow
-                && time < StationManager.NextStation.RouteOpenTime) {
-                targetDistance = 0;
-                targetSpeed = -10;
-                ebSpeed = recommendSpeed = 0;
-            }
-
             if (doorOpen) {
                 targetDistance = 0;
                 targetSpeed = -10;
@@ -224,18 +259,18 @@ namespace TGMTAts.OBCU {
             }
 
             // 显示出发信息
-            if (signalMode > 1 && state.Speed == 0) {
-                if (Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow
-                    && time > StationManager.NextStation.DepartureTime - Config.DepartRequestTime * 1000 && !doorOpen && StationManager.Arrived
-                    && time >= StationManager.NextStation.RouteOpenTime && panel_[29] != 3) {
+            if (signalMode > 1 && state.Speed == 0 && WCUAvailable) {
+                if (!mapPlugin.TrainHold && state.Time.TotalMilliseconds > StationManager.NextStation.DepartureTime - 5000 && panel_[29] != 3 &&
+                    Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow && StationManager.Arrived) {
                     panel_[32] = 2;
-                } else if (Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow
-                    && time - doorOpenTime >= Config.CloseRequestShowTime * 1000 && doorOpen && time > StationManager.NextStation.DepartureTime - (Config.DepartRequestTime + 20) * 1000
-                    && StationManager.Arrived && time >= StationManager.NextStation.RouteOpenTime) {
+                } else if (!mapPlugin.TrainHold && state.Time.TotalMilliseconds > StationManager.NextStation.DepartureTime - Config.DepartRequestTime * 1000 &&
+                    Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow) {
                     panel_[32] = 1;
                     atsSound1.Play();
-                } else if (Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow
-                    && time < StationManager.NextStation.RouteOpenTime) {
+                } else if (mapPlugin.TrainHold && !StationManager.NextStation.Pass) {
+                    targetDistance = 0;
+                    targetSpeed = -10;
+                    ebSpeed = recommendSpeed = 0;
                     panel_[32] = 4;
                 } else {
                     panel_[32] = 0;
@@ -261,7 +296,7 @@ namespace TGMTAts.OBCU {
 
             // 如果没有无线电，显示无线电故障
             panel_[23] = state.Speed == 0 ? 0 : 1;
-            panel_[30] = deviceCapability != 2 ? 1 : 0;
+            panel_[30] = !RadioAvailable ? 1 : 0;
 
             // ATO
             atsPanel40.Value = 0;
@@ -298,6 +333,34 @@ namespace TGMTAts.OBCU {
                 }
             }
 
+            // 防溜、车门零速保护
+            //if (state.Speed < 0.5 && handles.Power.Notch < 1 && handles.Brake.Notch < 1 && driveMode != 2) {
+            //    bCommand = Math.Min(Math.Max(bCommand, 1), handles.Brake.MaxServiceBrakeNotch);
+            //}
+
+            if (doorOpen || panel_[32] == 4) {
+                panel_[15] = -10 * speedMultiplier;
+                panel_[16] = 0;
+                //if (handles.Brake.Notch < 4) bCommand = Math.Min(Math.Max(bCommand, 1), handles.Brake.MaxServiceBrakeNotch);
+                rCommand = ReverserPosition.N;
+            }
+
+            // 后退监督: 每1m一次紧制 (先这么做着, 有些地区似乎是先1m之后每次0.5m)
+            if (handles.Reverser.Position == ReverserPosition.B) {
+                if (location > reverseStartLocation) reverseStartLocation = location;
+                if (location < reverseStartLocation - Config.ReverseStepDistance) {
+                    if (state.Speed == 0 && handles.Power.Notch == 0) {
+                        reverseStartLocation = location;
+                    } else {
+                        panel_[10] = 2;
+                        panel_[29] = 2;
+                        bCommand = Math.Max(bCommand, handles.Brake.EmergencyBrakeNotch);
+                    }
+                }
+            } else if (state.Speed >= 0) {
+                reverseStartLocation = Config.LessInf;
+            }
+
             // ATP 制动干预部分
             if (ebSpeed > 0) {
                 // 有移动授权
@@ -305,7 +368,7 @@ namespace TGMTAts.OBCU {
                     if (atsSound0.PlayState != PlayState.Stop) atsSound0.Stop();
                     // 低于制动缓解速度
                     if (ebState > 0) {
-                        if (location > movementEndpoint.Location) {
+                        if (signalMode == 2 && location > StationManager.CTCEndpoint().Location) {
                             // 冲出移动授权终点，要求RM
                             ackMessage = 6;
                         } else {
@@ -339,7 +402,7 @@ namespace TGMTAts.OBCU {
                 }
             } else if (signalMode == 1 && !doorOpen && panel_[29] != 3) {
                 // ITC下冲出移动授权终点。
-                if (state.Speed == 0) {
+                if (state.Speed == 0 && location > ITCNextSectionPos) {
                     // 停稳后降级到RM模式。等待确认。
                     ackMessage = 6;
                 }
@@ -351,37 +414,31 @@ namespace TGMTAts.OBCU {
                 panel_[19] = 0;
                 panel_[17] = 0;
                 bCommand = Math.Max(bCommand, handles.Brake.EmergencyBrakeNotch);
-            }
-
-            // 防溜、车门零速保护
-            if (state.Speed < 0.5 && handles.Power.Notch < 1 && handles.Brake.Notch < 1 && driveMode != 2) {
-                bCommand = Math.Min(Math.Max(bCommand, 1), handles.Brake.MaxServiceBrakeNotch);
-            }
-
-            if (doorOpen || panel_[32] == 4) {
-                panel_[15] = -10 * speedMultiplier;
-                panel_[16] = 0;
-                if (handles.Brake.Notch < 4) bCommand = Math.Min(Math.Max(bCommand, 1), handles.Brake.MaxServiceBrakeNotch);
-            }
-
-            // 后退监督: 每1m一次紧制 (先这么做着, 有些地区似乎是先1m之后每次0.5m)
-            if (handles.Reverser.Position == ReverserPosition.B) {
-                if (location > reverseStartLocation) reverseStartLocation = location;
-                if (location < reverseStartLocation - Config.ReverseStepDistance) {
-                    if (state.Speed == 0 && handles.Power.Notch == 0) {
-                        reverseStartLocation = location;
-                    } else {
-                        panel_[10] = 2;
-                        panel_[29] = 2;
-                        bCommand = Math.Max(bCommand, handles.Brake.EmergencyBrakeNotch);
-                    }
+            } else if (RadioFailed) {
+                ebState = 1;
+                panel_[10] = 2;
+                panel_[29] = 2;
+                bCommand = Math.Max(bCommand, handles.Brake.EmergencyBrakeNotch);
+            } else if (ebSpeed == 0) {
+                if (state.Speed > 0) {
+                    ebState = 1;
+                    panel_[10] = 2;
+                    panel_[29] = 2;
+                    bCommand = Math.Max(bCommand, handles.Brake.EmergencyBrakeNotch);
+                    if (atsSound0.PlayState != PlayState.PlayingLoop) atsSound0.PlayLoop();
                 }
-            } else if (state.Speed >= 0) {
-                reverseStartLocation = Config.LessInf;
             }
+
 
             // 显示释放速度、确认消息
             if (releaseSpeed) panel_[31] = 3;
+
+            //定位策略
+            if (!Localized) {
+                panel_[31] = 2;
+                if (BaliseCount >= 2) { Localized = true; BaliseCount = 0; }
+            }
+
             if (ackMessage > 0) {
                 panel_[35] = ackMessage;
                 panel_[36] = atsPanel36.Value = ((state.Time.TotalMilliseconds / 1000) % 0.5 < 0.25) ? 1 : 0;
@@ -397,7 +454,7 @@ namespace TGMTAts.OBCU {
                     if (location - StationManager.NextStation.StopPosition < Config.TDTFreezeDistance) {
                         // 未发车
                         // 这里先要求至少100m的移动授权
-                        if (movementEndpoint.Location - location > 100) {
+                        if ((signalMode == 1 && movementEndpoint.Location - location > 100) || (signalMode == 2 && StationManager.CTCEndpoint().Location - location > 100)) {
                             // 出站信号绿灯
                             if (sectogo < 0) {
                                 // 未到发车时间
@@ -429,7 +486,7 @@ namespace TGMTAts.OBCU {
                     // 在车站范围内
                     if (Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow) {
                         // 在停车窗口内
-                        if (state.Speed < 5) {
+                        if (state.Speed < 2) {
                             panel_[26] = 2;
                         } else {
                             panel_[26] = 1;
@@ -472,7 +529,8 @@ namespace TGMTAts.OBCU {
                 }
             }
 
-            if (TGMTAts.signalMode > 1 && StationManager.NextStation.Pass && Math.Abs(StationManager.NextStation.StopPosition - location) < Config.StationStartDistance + 200) panel_[32] = 3;
+            if (TGMTAts.signalMode > 1 && StationManager.NextStation.Pass &&
+                Math.Abs(StationManager.NextStation.StopPosition - location) < Config.StationStartDistance + 200) panel_[32] = 3;
 
             // 信号灯
             if (signalMode >= 2) {
@@ -496,7 +554,7 @@ namespace TGMTAts.OBCU {
 
             NotchCommandBase powerCommand = handles.Power.GetCommandToSetNotchTo(Math.Max(pCommand, handles.Power.Notch));
             NotchCommandBase brakeCommand = handles.Brake.GetCommandToSetNotchTo(Math.Max(bCommand, handles.Brake.Notch));
-            ReverserPositionCommandBase reverserCommand = ReverserPositionCommandBase.Continue;
+            ReverserPositionCommandBase reverserCommand = new ReverserPositionCommandBase.SetPositionCommand(rCommand);
             ConstantSpeedCommand? constantSpeedCommand = ConstantSpeedCommand.Continue;
 
             tickResult.HandleCommandSet = new HandleCommandSet(powerCommand, brakeCommand, reverserCommand, constantSpeedCommand);

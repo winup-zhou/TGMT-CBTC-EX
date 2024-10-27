@@ -46,6 +46,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Ato.cs" />
+    <Compile Include="DoorControl.cs" />
     <Compile Include="TickNew.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="FolderHash.cs" />

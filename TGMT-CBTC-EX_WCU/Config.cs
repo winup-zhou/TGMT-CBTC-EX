@@ -9,13 +9,13 @@ using System.Threading.Tasks;
 namespace TGMTAts.WCU {
     public static class Config {
 
-        public const double LessInf = 100000000;
+        public const double LessInf = 0x7fffffff;
         public static string PluginDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
 
         public static double TGMTTerrtoryStart = 0;
-        public static double TGMTTerrtoryEnd = 100000000;
-        public static string PretrainName = "pretrain";
+        public static double TGMTTerrtoryEnd = LessInf;
+        public static string PretrainName = "ptrain";
         public static string PretrainTrackkey = "";
         public static double CTCSignalIndex = 255;
 
@@ -76,11 +76,11 @@ namespace TGMTAts.WCU {
             }
             configFile.Close();
 
-            dict.Cfg("TGMTTerrtoryStart", ref TGMTTerrtoryStart);
-            dict.Cfg("TGMTTerrtoryEnd", ref TGMTTerrtoryEnd);
-            dict.Cfg("PretrainName", ref PretrainName);
-            dict.Cfg("PretrainTrackkey", ref PretrainTrackkey);
-            dict.Cfg("CTCSignalIndex", ref CTCSignalIndex);
+            dict.Cfg("tgmtterrtorystart", ref TGMTTerrtoryStart);
+            dict.Cfg("tgmtterrtoryend", ref TGMTTerrtoryEnd);
+            dict.Cfg("pretrainname", ref PretrainName);
+            dict.Cfg("pretraintrackkey", ref PretrainTrackkey);
+            dict.Cfg("ctcsignalindex", ref CTCSignalIndex);
         }
     }
 }

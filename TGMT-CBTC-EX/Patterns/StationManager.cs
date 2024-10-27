@@ -2,14 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Windows.Forms;
+using TGMTAts.WCU;
 
 
 namespace TGMTAts.OBCU {
     public static class StationManager {
 
         public class Station {
+            public bool CanSetPos = true;
             public int StopPosition = (int)Config.LessInf;
-            public int RouteOpenTime = 0;
             public int DepartureTime = 0;
             public int DoorOpenType = 0;
             //增加功能 跳停
@@ -27,21 +29,28 @@ namespace TGMTAts.OBCU {
 
         public static void SetBeacon(AtsEx.PluginHost.Native.BeaconPassedEventArgs data) {
             switch (data.Type) {
-                case 96820:
-                    NextStation.StopPosition = Math.Abs(data.Optional);
-                    NextStation.Pass = data.Optional < 0;
-                    TGMTAts.Log("车站停车位置 " + NextStation.StopPosition.ToString());
-                    break;
+                //case 96820:
+                //    NextStation.StopPosition = Math.Abs(data.Optional);
+                //    NextStation.Pass = data.Optional < 0;
+                //    TGMTAts.Log("车站停车位置 " + NextStation.StopPosition.ToString());
+                //    break;
                 case 96821:
                     NextStation.DoorOpenType = data.Optional;
                     break;
-                case 96822:
-                    NextStation.RouteOpenTime = TGMTAts.ConvertTime(data.Optional) * 1000;
-                    break;
-                case 96823:
-                    NextStation.DepartureTime = TGMTAts.ConvertTime(data.Optional) * 1000;
-                    break;
+                //case 96823:
+                //    NextStation.DepartureTime = TGMTAts.ConvertTime(data.Optional) * 1000;
+                //    break;
             }
+        }
+
+        public static void SetStation(double Location,bool isPass, TimeSpan DepTime) {
+            if (NextStation.CanSetPos) {
+                NextStation.StopPosition = (int)Location;
+                TGMTAts.Log("车站停车位置 " + NextStation.StopPosition.ToString());
+                NextStation.CanSetPos = false;
+            }
+            NextStation.Pass = isPass;
+            NextStation.DepartureTime = (int)DepTime.TotalMilliseconds;
         }
 
         public static void Update(AtsEx.PluginHost.Native.VehicleState state, bool doorState) {
@@ -64,25 +73,28 @@ namespace TGMTAts.OBCU {
         public static SpeedLimit RecommendCurve() {
             if (TGMTAts.signalMode > 1 && NextStation.Pass) {
                 return SpeedLimit.inf;
-            }else{
-                if (NextStation.StopPosition >= (int)Config.LessInf){
+            } else {
+                if (NextStation.StopPosition >= (int)Config.LessInf) {
                     return SpeedLimit.inf;
-                }else if (Arrived){
+                } else if (Arrived) {
                     return SpeedLimit.inf;
-                }else if (Stopped){
+                } else if (Stopped) {
                     return new SpeedLimit(0, 0);
-                }else{
+                } else {
                     return new SpeedLimit(0, NextStation.StopPosition);
                 }
             }
         }
 
         public static SpeedLimit CTCEndpoint() {
-            if (TGMTAts.time > NextStation.RouteOpenTime) {
-                return SpeedLimit.inf;
-            } else {
-                return new SpeedLimit(0, NextStation.StopPosition + Config.StationMotionEndpoint);
-            }
+            return TGMTAts.WCUAvailable ?
+                (TGMTAts.mapPlugin.TrainHold && !NextStation.Pass ? new SpeedLimit(0, NextStation.StopPosition + Config.StationMotionEndpoint) : SpeedLimit.inf)
+                : SpeedLimit.inf;
+            //if (TGMTAts.time > NextStation.RouteOpenTime) {
+            //    return SpeedLimit.inf;
+            //} else {
+            //    return new SpeedLimit(0, NextStation.StopPosition + Config.StationMotionEndpoint);
+            //}
         }
     }
 }

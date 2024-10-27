@@ -27,7 +27,7 @@ namespace TGMTAts.OBCU {
                 sb.AppendFormat("下一限速 : {0,6} {1,-4}\n", D(TGMTAts.nextLimit.Location), D(TGMTAts.nextLimit.Limit));
             }
             sb.AppendLine();
-            sb.AppendFormat("授权终点 : {0,6}\n", D(TGMTAts.movementEndpoint.Location));
+            sb.AppendFormat("ITC授权终点 : {0,6}\n", D(TGMTAts.movementEndpoint.Location));
             var pretrain = PreTrainManager.GetEndpoint();
             sb.AppendFormat("前车信息 : {0,6} {1,-4}\n", D(pretrain.Location), D(pretrain.Limit));
             sb.AppendFormat("车站     : {0,6} {1} {2}\n",

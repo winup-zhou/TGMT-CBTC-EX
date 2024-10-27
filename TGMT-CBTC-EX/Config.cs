@@ -8,7 +8,7 @@ namespace TGMTAts.OBCU {
 
     public static class Config {
 
-        public const double LessInf = 100000000;
+        public const double LessInf = 0x7fffffff;
         public static string PluginDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
         public static bool Debug = false;
@@ -30,7 +30,7 @@ namespace TGMTAts.OBCU {
         public static double StationEndDistance = 5;
         public static double StationMotionEndpoint = 3;
         public static double CTCSafetyDistance = 30;
-        public static double CloseRequestShowTime = 1000;
+        public static double CloseRequestShowTime = 10;
         public static double ITCSafetyDistance = 20;
 
         public static double TrainLength = 0;

@@ -8,55 +8,105 @@ using AtsEx.PluginHost.Plugins;
 using AtsEx.Extensions.PreTrainPatch;
 using System.IO;
 using System.Collections.Generic;
-
+using System.Windows.Forms;
+using System.Linq;
 
 
 namespace TGMTAts.WCU {
     [PluginType(PluginType.MapPlugin)]
-    public class PluginMain : AssemblyPluginBase {
-        static PluginMain() {
+    public class TGMTAts : AssemblyPluginBase {
+        static TGMTAts() {
             Config.Load(Path.Combine(Config.PluginDir, "TGMT_WCUConfig.txt"));
         }
+        //WCU -> OBCU
+        private double MA = 0;
+        public double MovementAuthority {
+            get {
+                return MA;
+            }
+        }
+        private double nextBlockLocation = 0;
+        public double NextSectionLocation {
+            get {
+                return nextBlockLocation;
+            }
+        }
+        private bool isTrainHold = false;
+        public bool TrainHold {
+            get {
+                return isTrainHold;
+            }
+        }
+        private bool StaPass = false;
+        private double NextStaLocation = 0;
+        private TimeSpan NextStaDepTime = TimeSpan.Zero;
 
-        public double MovementAuthority { get; set; } = 0;
+        public bool NextStaPass {
+            get {
+                return StaPass;
+            }
+        }
+        public double StationLocation {
+            get {
+                return NextStaLocation;
+            }
+        }
+        public TimeSpan DepTime {
+            get {
+                return NextStaDepTime;
+            }
+        }
+
+
+        //OBCU -> WCU
         public int OBCULevel { get; set; } = 0;
         public double SelfTrainLocation { get; set; } = 0;
+        public double SelfTrainSpeed { get; set; } = 0;
+        public TimeSpan CurrentTime { get; set; } = new TimeSpan();
+        public bool AtStation { get; set; } = false;
+        public bool StopAtPos { get; set; } = false;
+        public bool RadioAvailable { get; set; } = false;
 
         private List<SignalPatch> SignalPatch = new List<SignalPatch>();
         private Train Train;
         private PreTrainPatch PreTrainPatch;
         private SectionManager sectionManager;
+        private StationList staList;
+        private bool TrainLoaded = false;
+        private Station NextSta;
 
 
-        public PluginMain(PluginBuilder builder) : base(builder) {
+        public TGMTAts(PluginBuilder builder) : base(builder) {
             Plugins.AllPluginsLoaded += OnAllPluginsLoaded;
             BveHacker.ScenarioCreated += OnScenarioCreated;
         }
 
         private void OnAllPluginsLoaded(object sender, EventArgs e) {
-            MovementAuthority = OBCULevel = 0;
+            MA = OBCULevel = 0;
         }
 
 
         private void OnScenarioCreated(ScenarioCreatedEventArgs e) {
+            sectionManager = e.Scenario.SectionManager;
             if (!e.Scenario.Trains.ContainsKey(Config.PretrainName)) {
-                throw new BveFileLoadException(string.Format("キーが {0} の他列車が見つかりませんでした。", Config.PretrainName), "TGMT-CBTC-EX_WCU");
+                TrainLoaded = false;
+                MessageBox.Show(string.Format("找不到名为 {0} 的列车，请检查Map以及插件设置", Config.PretrainName), "TGMT-CBTC-EX_WCU");
+            } else {
+                TrainLoaded = true;
+                Train = e.Scenario.Trains[Config.PretrainName];
+                PreTrainPatch = Extensions.GetExtension<IPreTrainPatchFactory>().Patch(nameof(PreTrainPatch), sectionManager, new PreTrainLocationConverter(Train, sectionManager));
             }
 
-            Train = e.Scenario.Trains[Config.PretrainName];
-
-            sectionManager = e.Scenario.SectionManager;
-            PreTrainPatch = Extensions.GetExtension<IPreTrainPatchFactory>().Patch(nameof(PreTrainPatch), sectionManager, new PreTrainLocationConverter(Train, sectionManager));
             int pointer = 0;
             while (pointer < sectionManager.Sections.Count - 1) {
-                SignalPatch.Add(Extensions.GetExtension<ISignalPatchFactory>().Patch(nameof(SignalPatch), sectionManager.Sections[pointer] as Section,
-                    source => (sectionManager.Sections[pointer].Location >= SelfTrainLocation && sectionManager.Sections[pointer].Location >= Config.TGMTTerrtoryStart
-                    && sectionManager.Sections[pointer].Location < Config.TGMTTerrtoryEnd)
-                    ? (OBCULevel == 2)
+                SignalPatch.Add(Extensions.GetExtension<ISignalPatchFactory>().Patch(nameof(SignalPatch), sectionManager.Sections[pointer] as Section, source =>
+                (sectionManager.Sections[pointer].Location >= SelfTrainLocation && sectionManager.Sections[pointer].Location >= Config.TGMTTerrtoryStart && sectionManager.Sections[pointer].Location < Config.TGMTTerrtoryEnd)
+                    ? (OBCULevel == 2 && RadioAvailable)
                     ? (int)Config.CTCSignalIndex : source : source));
                 ++pointer;
             }
-                
+
+            NextSta = e.Scenario.Route.Stations[0] as Station;
         }
 
         public override void Dispose() {
@@ -64,6 +114,15 @@ namespace TGMTAts.WCU {
             PreTrainPatch?.Dispose();
             Plugins.AllPluginsLoaded -= OnAllPluginsLoaded;
             BveHacker.ScenarioCreated -= OnScenarioCreated;
+            TrainLoaded = false;
+            MA = 0;
+            OBCULevel = 0;
+            SelfTrainLocation = 0;
+            nextBlockLocation = 0;
+            isTrainHold = AtStation = false;
+            RadioAvailable = false;
+            CurrentTime = new TimeSpan();
+
         }
 
         private class PreTrainLocationConverter : IPreTrainLocationConverter {
@@ -81,7 +140,45 @@ namespace TGMTAts.WCU {
 
         public override TickResult Tick(TimeSpan elapsed) {
 
-            MovementAuthority = Train.Location;
+            int pointer = 0;
+            while (sectionManager.Sections[pointer].Location < SelfTrainLocation)
+                pointer++;
+            if (pointer >= sectionManager.Sections.Count)
+                pointer = sectionManager.Sections.Count - 1;
+
+            var CurrentSection = sectionManager.Sections[pointer == 0 ? 0 : pointer - 1] as Section;
+            var NextSection = sectionManager.Sections[pointer] as Section;
+
+            if (AtStation) {
+                if (StopAtPos) {
+                    int pointer_ = 0;
+                    while (BveHacker.Scenario.Route.Stations[pointer_].Location < SelfTrainLocation - 25)
+                        pointer_++;
+                    NextSta = BveHacker.Scenario.Route.Stations[pointer_] as Station;
+                    StaPass = NextSta.Pass;
+                    NextStaLocation = NextSta.Location;
+                    if (NextSta.DepertureTime != TimeSpan.Zero) {
+                        NextStaDepTime = NextSta.DepertureTime;
+                    } else NextStaDepTime = NextSta.DefaultTime + new TimeSpan(0, 0, 30);
+                }
+                if (CurrentTime.TotalMilliseconds < (NextSta.DepertureTimeMilliseconds - NextSta.StoppageTimeMilliseconds) && NextSta.SignalFlag == true)
+                    isTrainHold = true;
+                else isTrainHold = false;
+            } else {
+                int pointer_ = 0;
+                while (BveHacker.Scenario.Route.Stations[pointer_].Location < SelfTrainLocation - 25)
+                    pointer_++;
+                NextSta = BveHacker.Scenario.Route.Stations[pointer_] as Station;
+                isTrainHold = false;
+                StaPass = NextSta.Pass;
+                NextStaLocation = NextSta.Location;
+                if (NextSta.DepertureTime != TimeSpan.Zero) {
+                    NextStaDepTime = NextSta.DepertureTime;
+                } else NextStaDepTime = NextSta.DefaultTime + new TimeSpan(0, 0, 30);
+            }
+
+            nextBlockLocation = NextSection.Location;
+            if (TrainLoaded) MA = Train.Location;
 
             return new MapPluginTickResult();
         }
