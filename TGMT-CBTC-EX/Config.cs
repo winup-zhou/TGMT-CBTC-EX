@@ -8,7 +8,7 @@ namespace TGMTAts.OBCU {
 
     public static class Config {
 
-        public const double LessInf = 100000000;
+        public const double LessInf = 0x7fffffff;
         public static string PluginDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
         public static bool Debug = false;

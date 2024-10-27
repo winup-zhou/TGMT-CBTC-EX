@@ -64,25 +64,28 @@ namespace TGMTAts.OBCU {
         public static SpeedLimit RecommendCurve() {
             if (TGMTAts.signalMode > 1 && NextStation.Pass) {
                 return SpeedLimit.inf;
-            }else{
-                if (NextStation.StopPosition >= (int)Config.LessInf){
+            } else {
+                if (NextStation.StopPosition >= (int)Config.LessInf) {
                     return SpeedLimit.inf;
-                }else if (Arrived){
+                } else if (Arrived) {
                     return SpeedLimit.inf;
-                }else if (Stopped){
+                } else if (Stopped) {
                     return new SpeedLimit(0, 0);
-                }else{
+                } else {
                     return new SpeedLimit(0, NextStation.StopPosition);
                 }
             }
         }
 
         public static SpeedLimit CTCEndpoint() {
-            if (TGMTAts.time > NextStation.RouteOpenTime) {
-                return SpeedLimit.inf;
-            } else {
-                return new SpeedLimit(0, NextStation.StopPosition + Config.StationMotionEndpoint);
-            }
+            return TGMTAts.WCUAvailable ?
+                (TGMTAts.mapPlugin.TrainHold && !NextStation.Pass ? new SpeedLimit(0, NextStation.StopPosition + Config.StationMotionEndpoint) : SpeedLimit.inf)
+                : SpeedLimit.inf;
+            //if (TGMTAts.time > NextStation.RouteOpenTime) {
+            //    return SpeedLimit.inf;
+            //} else {
+            //    return new SpeedLimit(0, NextStation.StopPosition + Config.StationMotionEndpoint);
+            //}
         }
     }
 }

@@ -46,6 +46,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Ato.cs" />
+    <Compile Include="DoorControl.cs" />
     <Compile Include="TickNew.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="FolderHash.cs" />
@@ -99,7 +100,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
+    <PostBuildEvent>COPY $(TargetPath) D:\Scenarios\CRT4\AtsEX\AtsEXPlugins\$(TargetFileName)</PostBuildEvent>
   </PropertyGroup>
 </Project>

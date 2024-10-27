@@ -4,7 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using AtsEx.PluginHost.Plugins;
 
-namespace TGMTAts.OBCU{
+namespace TGMTAts.OBCU {
     public partial class TGMTAts : AssemblyPluginBase {
 
         private static bool a1Down, b1Down;
@@ -19,7 +19,7 @@ namespace TGMTAts.OBCU{
 
         private void OnB1Pressed(object sender, EventArgs e) {
             b1Down = true;
-            if (a1Down && b1Down && Ato.IsAvailable()) { 
+            if (a1Down && b1Down && Ato.IsAvailable()) {
                 driveMode = 2;
             }
         }
@@ -69,8 +69,10 @@ namespace TGMTAts.OBCU{
                     trackLimit.SetBeacon(e);
                     break;
                 case 96811:
+                    var lastRadioAvailable = RadioAvailable;
                     RadioAvailable = e.Optional > 0;
-                    FixIncompatibleModes();
+                    if (lastRadioAvailable && !RadioAvailable)
+                        RadioFailed = true;
                     break;
                 case 96812:
                     doorMode = e.Optional;
@@ -83,7 +85,7 @@ namespace TGMTAts.OBCU{
                     }
                     selectedMode = e.Optional / 100 % 10;
                     driveMode = 1;
-                    FixIncompatibleModes();
+                    if (!RadioFailed) FixIncompatibleModes();
                     break;
                 case 96810:
                     trackLimit.SetBeacon(e);
@@ -109,8 +111,8 @@ namespace TGMTAts.OBCU{
                     if (!Localized) BaliseCount += 1;
                     // TGMT 主
                     // TGMT 填充
-                    signalMode = 2;
-                    FixIncompatibleModes();
+                    if (signalMode < 1) signalMode = 1;
+                    if (!RadioFailed) FixIncompatibleModes();
                     if (signalMode == 1) {
                         if (e.SignalIndex > 0) {
                             ITCNextSectionPos = e.Optional;
@@ -119,7 +121,7 @@ namespace TGMTAts.OBCU{
                             movementEndpoint = new SpeedLimit(0, e.Optional - Config.ITCSafetyDistance);
                             releaseSpeed = false;
                         } else {
-                            ITCNextSectionPos = location + e.Distance;
+                            ITCNextSectionPos = e.Type == 96801 ? location : location + e.Distance;
                             Log("红灯 移动授权终点是 " + location + e.Distance);
                             movementEndpoint = new SpeedLimit(0, location + e.Distance - Config.ITCSafetyDistance);
                         }
@@ -128,8 +130,6 @@ namespace TGMTAts.OBCU{
                 case 96803:
                     if (!Localized) BaliseCount += 1;
                     // TGMT 定位
-                    signalMode = 2;
-                    FixIncompatibleModes();
                     break;
             }
         }
@@ -157,23 +157,23 @@ namespace TGMTAts.OBCU{
 
         public static double time;
         public static double doorOpenTime, doorCloseTime;
-        
-        
+
+
         private void DoorOpen(AtsEx.PluginHost.Native.DoorEventArgs e) {
             doorOpen = true;
             doorOpenTime = time;
         }
-        
-        
+
+
         private void DoorClose(AtsEx.PluginHost.Native.DoorEventArgs e) {
             doorOpen = false;
             doorCloseTime = time;
         }
 
-        
-        private void HornBlow(int type){
 
-		}
-		
-	}
+        private void HornBlow(int type) {
+
+        }
+
+    }
 }

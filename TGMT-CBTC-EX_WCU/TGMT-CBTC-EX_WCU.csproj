@@ -68,7 +68,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
+    <PostBuildEvent>COPY $(TargetPath) D:\Scenarios\新浜線(架空)\NiihamaLine\MapPlugins\$(TargetFileName)</PostBuildEvent>
   </PropertyGroup>
 </Project>

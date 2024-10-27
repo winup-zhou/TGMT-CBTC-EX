@@ -31,6 +31,7 @@ namespace TGMTAts.OBCU {
         public static int doorMode = 1;
         // 无线电
         public static bool RadioAvailable = false;
+        public static bool RadioFailed = false;
         // WCU可用性
         public static bool WCUAvailable = false;
 
@@ -48,6 +49,7 @@ namespace TGMTAts.OBCU {
 
         //定位策略
         public static int BaliseCount = 0;
+        public static double SigUpgradePosition = Config.LessInf;
         public static bool Localized = false;
 
         public static double reverseStartLocation = Config.LessInf;
@@ -93,6 +95,10 @@ namespace TGMTAts.OBCU {
             return null;
         }
 
+        private static void CTCUpgrade() {
+            signalMode = 2;
+            FixIncompatibleModes();
+        }
         static void FixIncompatibleModes() {
             if (BaliseCount >= 2) { Localized = true; BaliseCount = 0; }
             if (WCUAvailable) {
@@ -107,7 +113,6 @@ namespace TGMTAts.OBCU {
             } else {
                 signalMode = 0;
             }
-
         }
 
         public static int ConvertTime(int human) {
@@ -143,6 +148,7 @@ namespace TGMTAts.OBCU {
             PreTrainManager.ResetCache();
 
             RadioAvailable = false;
+            RadioFailed = false;
             WCUAvailable = false;
             doorMode = 1;
             signalMode = 2;

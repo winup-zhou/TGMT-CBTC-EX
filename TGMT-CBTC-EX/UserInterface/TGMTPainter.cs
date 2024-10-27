@@ -55,6 +55,14 @@ namespace TGMTAts.OBCU {
             hHMI.BeginGDI();
             hHMI.DrawImage(hmi, 0, 0);
 
+            var sec = Convert.ToInt32(state.Time.TotalMilliseconds) / 1000 % 60;
+            if (sec % 2 == 0) {
+                hHMI.DrawImage(colon, 214, 552);
+                hHMI.DrawImage(colon, 256, 552);
+            }
+            var min = Convert.ToInt32(state.Time.TotalMilliseconds) / 1000 / 60 % 60;
+            var hrs = Convert.ToInt32(state.Time.TotalMilliseconds) / 1000 / 3600 % 60;
+
             hHMI.DrawImage(menu, 681, 66, TGMTAts.panel_[23] * 64, 64);
             hHMI.DrawImage(drvmode, 589, 133, TGMTAts.panel_[24] * 64, 64);
             hHMI.DrawImage(sigmode, 686, 133, TGMTAts.panel_[25] * 64, 64);
@@ -87,19 +95,12 @@ namespace TGMTAts.OBCU {
             hHMI.DrawImage(num0, 634, 31, D(TGMTAts.DestinationNumber, 1) * 18, 18);
             hHMI.DrawImage(num0, 620, 31, D(TGMTAts.DestinationNumber, 2) * 18, 18);
 
-            var sec = Convert.ToInt32(state.Time.TotalMilliseconds) / 1000 % 60;
-            var min = Convert.ToInt32(state.Time.TotalMilliseconds) / 1000 / 60 % 60;
-            var hrs = Convert.ToInt32(state.Time.TotalMilliseconds) / 1000 / 3600 % 60;
             hHMI.DrawImage(num0, 186, 552, D(hrs, 1) * 18, 18);
             hHMI.DrawImage(num0, 200, 552, D(hrs, 0) * 18, 18);
             hHMI.DrawImage(num0, 228, 552, D(min, 1) * 18, 18);
             hHMI.DrawImage(num0, 242, 552, D(min, 0) * 18, 18);
             hHMI.DrawImage(num0, 270, 552, D(sec, 1) * 18, 18);
             hHMI.DrawImage(num0, 284, 552, D(sec, 0) * 18, 18);
-            if (sec % 2 == 0) {
-                hHMI.DrawImage(colon, 214, 552);
-                hHMI.DrawImage(colon, 256, 552);
-            }
             hHMI.EndGDI();
 
             hHMI.Graphics.FillRectangle(overspeed[TGMTAts.panel_[10]], new Rectangle(20, 18, 80, 78));
