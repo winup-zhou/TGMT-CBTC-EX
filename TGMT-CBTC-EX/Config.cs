@@ -15,7 +15,7 @@ namespace TGMTAts.OBCU {
 
         public static double MaxSpeed = 80;
         public static double RecommendSpeedOffset = -5;
-        public static double RecommendDeceleration = -2;
+        public static double RecommendDeceleration = -2.5;
         public static double EbPatternDeceleration = -3;
         public static double MaxServiceDeceleration = -4;
         public static List<KeyValuePair<int, double>> Acceleration = new List<KeyValuePair<int, double>>();

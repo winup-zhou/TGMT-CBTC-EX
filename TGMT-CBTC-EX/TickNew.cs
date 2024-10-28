@@ -261,10 +261,10 @@ namespace TGMTAts.OBCU {
             // 显示出发信息
             if (signalMode > 1 && state.Speed == 0 && WCUAvailable) {
                 if (!mapPlugin.TrainHold && state.Time.TotalMilliseconds > StationManager.NextStation.DepartureTime - 5000 && panel_[29] != 3 &&
-                    Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow && StationManager.Arrived) {
+                    Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow && StationManager.Arrived && !doorOpen){
                     panel_[32] = 2;
                 } else if (!mapPlugin.TrainHold && state.Time.TotalMilliseconds > StationManager.NextStation.DepartureTime - Config.DepartRequestTime * 1000 &&
-                    Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow) {
+                    Math.Abs(StationManager.NextStation.StopPosition - location) < Config.DoorEnableWindow && StationManager.Arrived && doorOpen) {
                     panel_[32] = 1;
                     atsSound1.Play();
                 } else if (mapPlugin.TrainHold && !StationManager.NextStation.Pass) {

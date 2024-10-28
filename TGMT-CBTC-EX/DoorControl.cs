@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace TGMTAts.OBCU {
-    internal class DoorControl {
+    static class DoorControl {
 
     }
 }
